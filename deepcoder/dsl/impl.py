@@ -55,7 +55,6 @@ def _scan1l(f, xs):
 MAP = Function('MAP', lambda f, xs: [f(x) for x in xs], (FunctionType(INT, INT), LIST), LIST)
 FILTER = Function('FILTER', lambda f, xs: [x for x in xs if f(x)], (FunctionType(INT, BOOL), LIST), LIST)
 COUNT = Function('COUNT', lambda f, xs: len([x for x in xs if f(x)]), (FunctionType(INT, BOOL), LIST), INT)
-MAP = Function('MAP', lambda f, xs: [f(x) for x in xs], (FunctionType(INT, INT), LIST), LIST)
 SCAN1L = Function('SCAN1L', _scan1l, (FunctionType((INT, INT), INT), LIST), LIST)
 ZIPWITH = Function('ZIPWITH', lambda f, xs, ys: [f(x, y) for (x, y) in zip(xs, ys)], (FunctionType((INT, INT), INT), LIST, LIST), LIST)
 

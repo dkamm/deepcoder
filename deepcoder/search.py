@@ -1,9 +1,12 @@
 import collections
 import itertools
 
+import tqdm
+
 from deepcoder.dsl.constants import NULL
 from deepcoder.dsl.variable import Variable
 from deepcoder.dsl import types
+from deepcoder.dsl.program import Program
 
 def iterate_inputs(f, typemap):
     """Yields the cartesian product over valid inputs for f according to typemap.
@@ -11,6 +14,8 @@ def iterate_inputs(f, typemap):
     Args:
         f: Function to get inputs for
         typemap: type -> list of Function or Variable
+    Yields:
+        Tuple of mixed types (int or Function) representing arguments to f
     """
     argslists = []
     for input_type in f.type.input_types:
@@ -76,6 +81,8 @@ def dfs(inputs, output, T, ctx):
         for f in ctx.functions:
             for args in iterate_inputs(f, typemap):
 
+
+
                 stm = f.name + ',' + ','.join([x.name for x in args])
                 if stm in used:
                     continue
@@ -91,6 +98,41 @@ def dfs(inputs, output, T, ctx):
 
     dfshelper(prefix, 0)
     return valid, prefixmap
+
+def enumerate_programs(input_types, T, ctx, limit=None):
+    programs = set()
+    p_base = Program(input_types, [])
+
+    pbar = tqdm.tqdm(total=limit)
+
+    def helper(p_base, t):
+        if t == T:
+            return
+
+        typemap = collections.defaultdict(list)
+        for i, typ in enumerate(p_base.types):
+            typemap[typ].append(i)
+        typemap.update(ctx.typemap)
+
+        used = set(p_base.stmts)
+        for f in ctx.functions:
+            for args in iterate_inputs(f, typemap):
+
+                stmt = f, args
+                if stmt in used:
+                    continue
+
+                p = Program(p_base.input_types, p_base.stmts + [stmt])
+                programs.add(p)
+                pbar.update(1)
+                if limit and len(programs) >= limit:
+                    return
+                helper(p, t + 1)
+
+    helper(p_base, 0)
+    pbar.close()
+    return programs
+
 
 def search_and_add():
     pass
