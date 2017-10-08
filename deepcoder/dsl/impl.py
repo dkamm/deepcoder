@@ -38,7 +38,7 @@ ODD = Function('ODD', lambda x: x % 2 == 1, INT, BOOL)
 LPLUS = Function('+', lambda x, y: x + y, (INT, INT), INT)
 LMINUS = Function('-', lambda x, y: x - y, (INT, INT), INT)
 LTIMES = Function('*', lambda x, y: x * y, (INT, INT), INT)
-LDIV = Function('//', lambda x, y: x // y if y else NULL, (INT, INT), INT)
+#LDIV = Function('//', lambda x, y: x // y if y else NULL, (INT, INT), INT)
 LMIN = Function('min', min, (INT, INT), INT)
 LMAX = Function('max', max, (INT, INT), INT)
 

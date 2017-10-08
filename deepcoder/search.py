@@ -15,7 +15,7 @@ def iterate_inputs(f, typemap):
         f: Function to get inputs for
         typemap: type -> list of Function or Variable
     Yields:
-        Tuple of mixed types (int or Function) representing arguments to f
+        Tuple of mixed types (Variable or Function) representing arguments to f
     """
     argslists = []
     for input_type in f.type.input_types:
@@ -45,58 +45,56 @@ def dfs(inputs, output, T, ctx):
             raise TypeError('input must be str or list, got {}'.format(type(input)))
         input_variables.append(Variable(str(i), input, typ))
 
+    # init
+    inputtypemap = collections.defaultdict(list)
     prefixmap = {}
+    for i, x in enumerate(input_variables):
+        input_types = [x.type for x in input_variables[:i+1]]
+        p_base = Program(input_types, tuple())
+        prefixmap[p_base] = x
+        inputtypemap[x.type].append(x)
     valid = []
 
-    # init
-    prefix = ''
-    for i, x in enumerate(input_variables):
-        if i:
-            prefix += '|'
-        prefix += str(x.type)
-        prefixmap[prefix] = x
-
-    def dfshelper(baseprefix, t):
-        if prefixmap[baseprefix].x == output:
-            valid.append(baseprefix)
+    def dfshelper(p_base, t):
+        if prefixmap[p_base].x == output:
+            valid.append(p_base)
             return True
 
         if t == T:
             return
 
         typemap = collections.defaultdict(list)
+        for k, v in inputtypemap.items():
+            typemap[k] += v
 
-        stms = baseprefix.rstrip('|').split('|')
-        prefix = ''
         used = set()
-        for i, stm in enumerate(stms):
-            if i:
-                prefix += '|'
-            prefix += stm
-            v = prefixmap[prefix]
-            used.add(stm) # INT and LIST are added but won't be used
-            typemap[v.type].append(v)
-        typemap.update(ctx.typemap)
+        for i, stmt in enumerate(p_base.stmts):
+            p = Program(p_base.input_types, p_base.stmts[:i+1])
+            v = prefixmap[p]
+            used.add(stmt)
+            if v.x != NULL:
+                # don't consider NULL for input iteration
+                typemap[v.type].append(v)
+
+        for k, v in ctx.typemap.items():
+            typemap[k] += v
 
         for f in ctx.functions:
             for args in iterate_inputs(f, typemap):
-
-
-
-                stm = f.name + ',' + ','.join([x.name for x in args])
-                if stm in used:
+                stmt = (f, args)
+                if stmt in used:
                     continue
                 raw_args = [x.x for x in args]
                 y = f(*raw_args)
-                if y == NULL:
-                    # throw out null results
-                    continue
-                prefix = baseprefix + '|' + stm
-                prefixmap[prefix] = Variable(str(t + len(inputs)), y, f.output_type)
-                if dfshelper(prefix, t + 1):
+                #if y == NULL:
+                #    # throw out null results
+                #    continue
+                p = Program(p_base.input_types, list(p_base.stmts) + [stmt])
+                prefixmap[p] = Variable(str(t + len(inputs)), y, f.output_type)
+                if dfshelper(p, t + 1):
                     return True
 
-    dfshelper(prefix, 0)
+    dfshelper(p_base, 0)
     return valid, prefixmap
 
 def enumerate_programs(input_types, T, ctx, limit=None):
@@ -112,7 +110,9 @@ def enumerate_programs(input_types, T, ctx, limit=None):
         typemap = collections.defaultdict(list)
         for i, typ in enumerate(p_base.types):
             typemap[typ].append(i)
-        typemap.update(ctx.typemap)
+
+        for k, v in ctx.typemap.items():
+            typemap[k] += v
 
         used = set(p_base.stmts)
         for f in ctx.functions:
@@ -122,7 +122,7 @@ def enumerate_programs(input_types, T, ctx, limit=None):
                 if stmt in used:
                     continue
 
-                p = Program(p_base.input_types, p_base.stmts + [stmt])
+                p = Program(p_base.input_types, list(p_base.stmts) + [stmt])
                 programs.add(p)
                 pbar.update(1)
                 if limit and len(programs) >= limit:

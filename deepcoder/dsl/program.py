@@ -81,13 +81,13 @@ class Program(object):
     """
     Attributes:
         input_types (tuple): tuple of Type (INT,LIST) representing inputs
-        stmts (tuple): pair of function, tuple of mixed type representing arguments
+        stmts (tuple): tuple of statements. each statement is pair of function, tuple of mixed type representing arguments
         types (tuple): tuple of Type for all variables
         prefix (str): prefix string that completely describes program
     """
     def __init__(self, input_types, stmts):
-        self.input_types = input_types
-        self.stmts = stmts
+        self.input_types = tuple(input_types)
+        self.stmts = tuple(stmts)
         self.types = tuple(list(self.input_types) + [f.type.output_type for f, _ in self.stmts])
         self.prefix = self.toprefix()
 
@@ -112,9 +112,9 @@ class Program(object):
         return self.prefix == other.prefix
 
     def __lt__(self, other):
-        if len(self.types) < len(other.types):
-            return True
-        return str(self) < str(other)
+        #if len(self.types) < len(other.types):
+        #    return True
+        return self.prefix < other.prefix
 
     @classmethod
     def parse(cls, prefix):

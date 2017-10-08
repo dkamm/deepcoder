@@ -16,10 +16,13 @@ class Variable(object):
     def type(self):
         return self._type
 
+    def __hash__(self):
+        return hash(self._name)
+
     def __eq__(self, other):
         if not isinstance(other, Variable):
             return False
         return self.name == other.name and self.x == other.x and self.type == other.type
 
     def __repr__(self):
-        return str(self.x)
+        return str(self.name)
