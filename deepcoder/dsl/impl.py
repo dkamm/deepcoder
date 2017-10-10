@@ -78,7 +78,7 @@ LAMBDAS = [
     LPLUS,
     LMINUS,
     LTIMES,
-    LDIV,
+    #LDIV,
     LMIN,
     LMAX,
 ]
