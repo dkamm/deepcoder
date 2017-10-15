@@ -13,6 +13,10 @@ class Variable(object):
         return self._x
 
     @property
+    def val(self):
+        return self._x
+
+    @property
     def type(self):
         return self._type
 

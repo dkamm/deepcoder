@@ -46,7 +46,7 @@ class TestConstraint(unittest.TestCase):
             impl.TIMES3: constraint.IntConstraint(-3, 1),
             impl.TIMES4: constraint.IntConstraint(-2, 1),
             impl.TIMESNEG1: constraint.IntConstraint(-4, 10),
-            impl.POW2: constraint.IntConstraint(-3, 2)
+            impl.POW2: constraint.IntConstraint(-2, 2)
         }
 
         ic = constraint.IntConstraint(-10, 4)
@@ -85,7 +85,7 @@ class TestConstraint(unittest.TestCase):
         expectedmap = {
             impl.LPLUS : constraint.IntConstraint(-5, 2),
             impl.LMINUS : constraint.IntConstraint(-5, 2),
-            impl.LTIMES : constraint.IntConstraint(-3, 2),
+            impl.LTIMES : constraint.IntConstraint(-2, 2),
         }
 
         ic = constraint.IntConstraint(-10, 4)

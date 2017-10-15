@@ -15,7 +15,7 @@ SUM = Function('SUM', sum, LIST, INT)
 
 TAKE = Function('TAKE', lambda n, xs: xs[:n], (INT, LIST), LIST)
 DROP = Function('DROP', lambda n, xs: xs[n:], (INT, LIST), LIST)
-ACCESS = Function('ACCESS', lambda n, xs: xs[n] if n >= 0 and len(xs) > n else NULL, (INT, LIST), LIST)
+ACCESS = Function('ACCESS', lambda n, xs: xs[n] if n >= 0 and len(xs) > n else NULL, (INT, LIST), INT)
 
 
 # lambda functions

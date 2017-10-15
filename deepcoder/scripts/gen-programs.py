@@ -9,8 +9,8 @@ from deepcoder.search import enumerate_programs
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--max_nb_inputs', type=int)
-    parser.add_argument('--max_t', type=int)
+    parser.add_argument('--nb_inputs', type=int)
+    parser.add_argument('--max_prog_len', type=int)
     parser.add_argument('--max_nb_prog', type=int)
     parser.add_argument('--outfile', type=str)
     args = parser.parse_args()
@@ -21,12 +21,12 @@ def main():
     ctx = Context(dict(zip(impl.FUNCTIONS, np.ones(len(impl.FUNCTIONS)))))
 
     programs = set()
-    for nb_inputs in range(1, args.max_nb_inputs + 1):
+    for nb_inputs in range(1, args.nb_inputs + 1):
         # input types
         for nb_list in range(nb_inputs + 1):
             input_types = [LIST] * nb_list + [INT] * (nb_inputs - nb_list)
             print('searching for ', input_types)
-            programs |= enumerate_programs(tuple(input_types), len(input_types) + args.max_t, ctx, args.max_nb_prog)
+            programs |= enumerate_programs(tuple(input_types), len(input_types) + args.max_prog_len, ctx, args.max_nb_prog)
 
     print('Program count: {} (raw enumeration)'.format(len(programs)))
 
@@ -38,8 +38,7 @@ def main():
 
     with open(args.outfile, 'w') as fh:
         for p in sorted(list(programs)):
-            fh.write(p.toprefix() + '\n')
-    #from IPython import embed; embed()
+            fh.write(p.prefix() + '\n')
 
 if __name__ == '__main__':
     main()

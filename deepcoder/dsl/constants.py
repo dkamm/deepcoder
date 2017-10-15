@@ -1,4 +1,4 @@
-NULL = 2 ** 32 - 1
+NULL = 1024
 INTMIN = -256
 INTMAX = 256
 
