@@ -9,6 +9,14 @@ from deepcoder.dsl.impl import NAME2FUNC
 
 # statement: (function, (input0, input1, ..., inputn))
 
+def get_unused_indices(program):
+    """Returns unused indices of variables/statements in program."""
+    used = set()
+    for (_, inputs) in program.stmts:
+        used |= set(inputs)
+    all_indices = set(range(len(program.types) -1))
+    return all_indices - used
+
 def prune(program):
     N = len(program.input_types) + len(program.stmts)
 
@@ -45,37 +53,6 @@ def prune(program):
         stmts.append((f, new_inputs))
 
     return Program(input_types, stmts)
-
-def gen_inputs(input_types, maxlen=20, intrange=256):
-    inputs = []
-    for input_type in input_types:
-        if input_type == INT:
-            # We restrict INTs to [0,maxlen)
-            # because INT can only be used for array access
-            # via TAKE, DROP, ACCESS in the DSL
-            x = np.random.randint(0, maxlen)
-        else:
-            l = np.random.randint(0, maxlen)
-            x = list(np.random.randint(-intrange, intrange, l))
-
-        inputs.append(x)
-
-    return inputs
-
-def is_same(lhs, rhs, N=5, maxlen=20):
-    if lhs.input_types != rhs.input_types:
-        return False
-
-    inputs_list = [gen_inputs(lhs.input_types, maxlen) for _ in range(N)]
-
-    lhs_outputs = [lhs(*inputs) for inputs in inputs_list]
-    rhs_outputs = [rhs(*inputs) for inputs in inputs_list]
-
-    for lhs_output, rhs_output in zip(lhs_outputs, rhs_outputs):
-        if lhs_output != rhs_output:
-            return False
-
-    return True
 
 class Program(object):
     """

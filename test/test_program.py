@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from deepcoder.dsl.program import Program, prune, is_same
+from deepcoder.dsl.program import Program, prune, get_unused_indices
 
 class TestProgram(unittest.TestCase):
     def test_basic(self):
@@ -25,12 +25,13 @@ class TestProgram(unittest.TestCase):
         self.assertEqual(pp.toprefix(), expected)
 
 
-    def test_compare(self):
+    def test_get_unused_indices(self):
+        prefix = 'LIST|INT|MAP,*2,0|FILTER,>0,0|FILTER,<0,2'
+        program = Program.parse(prefix)
+        expected = {1, 3}
+        actual = get_unused_indices(program)
+        self.assertEqual(actual, expected)
 
-        lhs = Program.parse('LIST|MAXIMUM,0')
-        rhs = Program.parse('LIST|SCAN1L,max,0|MAXIMUM,1')
-
-        self.assertTrue(is_same(lhs, rhs))
 
 
 if __name__ == '__main__':

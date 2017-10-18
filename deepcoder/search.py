@@ -1,12 +1,16 @@
 import collections
+import concurrent.futures
 import itertools
+import multiprocessing
+import queue
+import time
 
 import tqdm
 
 from deepcoder.dsl.constants import NULL
 from deepcoder.dsl.variable import Variable
 from deepcoder.dsl import types
-from deepcoder.dsl.program import Program
+from deepcoder.dsl.program import Program, get_unused_indices
 
 def iterate_inputs(f, typemap):
     """Yields the cartesian product over valid inputs for f according to typemap.
@@ -97,24 +101,38 @@ def dfs(inputs, output, T, ctx):
     dfshelper(p_base, 0)
     return valid, prefixmap
 
-def enumerate_programs(input_types, T, ctx, limit=None):
-    programs = set()
-    p_base = Program(input_types, [])
+def enumerate_helper(input_types, T, ctx, result_queue, stop_queue):
+    program_base = Program(input_types, [])
 
-    pbar = tqdm.tqdm(total=limit)
+    monitor = {'stopped': False}
 
-    def helper(p_base, t):
+    def helper(program_base, t):
+        if monitor['stopped']:
+            return
+
+        try:
+            stop_queue.get_nowait()
+            monitor['stopped'] = True
+            return
+        except queue.Empty:
+            pass
+
         if t == T:
+            if not get_unused_indices(program_base):
+                result_queue.put(program_base.prefix)
+            # don't keep searching if pruned
+            # has < T stmts. will get picked up
+            # on another enumeration
             return
 
         typemap = collections.defaultdict(list)
-        for i, typ in enumerate(p_base.types):
+        for i, typ in enumerate(program_base.types):
             typemap[typ].append(i)
 
         for k, v in ctx.typemap.items():
             typemap[k] += v
 
-        used = set(p_base.stmts)
+        used = set(program_base.stmts)
         for f in ctx.functions:
             for args in iterate_inputs(f, typemap):
 
@@ -122,17 +140,85 @@ def enumerate_programs(input_types, T, ctx, limit=None):
                 if stmt in used:
                     continue
 
-                p = Program(p_base.input_types, list(p_base.stmts) + [stmt])
-                programs.add(p)
+                program = Program(program_base.input_types,
+                    list(program_base.stmts) + [stmt])
+                helper(program, t + 1)
+
+    helper(program_base, 0)
+    result_queue.put(None) # done
+    if not monitor['stopped']:
+        stop_queue.get()
+
+def enumerate_programs(input_type_combinations, T, ctx, max_nb_programs):
+    """Enumerates programs with T statements that have the same input types.
+
+    Each program is pruned and doesn't have any unused inputs or statements.
+
+    Arguments:
+        input_type_combinations (list): list of list of INT or LIST specifying all input types
+            to search over
+        T (int): number of statements in each outputted program
+        ctx (Context): search context
+        max_nb_programs (int): max number of programs to enumerate.
+
+    Returns:
+        set of programs with input types input_types and exactly T stmts.
+    """
+    programs = []
+
+    workers = []
+
+    result_queue = multiprocessing.Queue()
+    stop_queue = multiprocessing.Queue()
+
+    for input_types in input_type_combinations:
+        worker = multiprocessing.Process(target=enumerate_helper,
+            args=(input_types, T, ctx, result_queue, stop_queue))
+        worker.start()
+        workers.append(worker)
+
+    def join():
+        for worker in workers:
+            worker.join()
+
+    finished_cnt = 0
+    def all_done():
+        return finished_cnt == len(workers)
+
+    def stop_workers():
+        for _ in range(len(workers)):
+            stop_queue.put(1)
+
+    def wait_for_workers():
+        while True:
+            if not sum([worker.is_alive() for worker in workers]):
+                return
+            time.sleep(.1)
+
+    pbar = tqdm.tqdm(total=max_nb_programs)
+
+    stopped = False
+    while not all_done():
+        if not stopped and len(programs) >= max_nb_programs:
+            stopped = True
+            stop_workers()
+
+        try:
+            result = result_queue.get_nowait()
+            if result is None:
+                finished_cnt += 1
+                continue
+
+            program = Program.parse(result)
+            if len(programs) < max_nb_programs:
+                programs.append(program)
                 pbar.update(1)
-                if limit and len(programs) >= limit:
-                    return
-                helper(p, t + 1)
-
-    helper(p_base, 0)
-    pbar.close()
+        except queue.Empty:
+            continue
+    if not stopped:
+        stop_workers()
+    join()
     return programs
-
 
 def search_and_add():
     # TODO

@@ -34,29 +34,29 @@ def get_attribute_vec(program):
 
 def get_program_row(program, M, nb_inputs):
     row = {}
-
     program_examples = constraint.get_input_output_examples(
-                program, M)
+        program, M)
 
     def get_input_prefix(example_idx, input_idx):
-        return 'example={}_input={}'.format(example_idx, input_idx)
+        # tensorflow complained about either = or _ in names
+        return 'example{}input{}'.format(example_idx, input_idx)
 
     for i, (inputs, output) in enumerate(program_examples):
         for j, input in enumerate(inputs):
             typ, vals = encode(input)
-            row[get_input_prefix(i, j) + '_type'] = typ
-            row[get_input_prefix(i, j) + '_vals'] = vals
+            row[get_input_prefix(i, j) + 'type'] = typ
+            row[get_input_prefix(i, j) + 'vals'] = vals
 
         for j in range(len(inputs), nb_inputs):
             # pad with null
             typ = [0, 0]
             vals = [constants.NULL] * constraint.L
-            row[get_input_prefix(i, j) + '_type'] = typ
-            row[get_input_prefix(i, j) + '_vals'] = vals
+            row[get_input_prefix(i, j) + 'type'] = typ
+            row[get_input_prefix(i, j) + 'vals'] = vals
 
         typ, vals = encode(output)
-        row['example={}_output_type'.format(i)] = typ
-        row['example={}_output_vals'.format(i)] = vals
+        row['example{}outputtype'.format(i)] = typ
+        row['example{}outputvals'.format(i)] = vals
 
     return row
 

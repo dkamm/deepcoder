@@ -143,6 +143,14 @@ class TestConstraint(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_is_same(self):
+
+        lhs = Program.parse('LIST|MAXIMUM,0')
+        rhs = Program.parse('LIST|SCAN1L,max,0|MAXIMUM,1')
+
+        self.assertTrue(constraint.is_same(lhs, rhs))
+
+
 
 if __name__ == '__main__':
     unittest.main()

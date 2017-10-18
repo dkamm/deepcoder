@@ -19,6 +19,20 @@ class TestSearch(unittest.TestCase):
         self.assertTrue(valid)
         self.assertTrue(len(prefixmap))
 
+    def test_dfs1(self):
+        ctx = Context(dict(zip(impl.FUNCTIONS, np.ones(len(impl.FUNCTIONS)))))
+
+        inputs = [[1,-2,3,-4,5,-6,7]]
+        output = [1,3,15,105]
+
+        T = 3
+        valid, prefixmap = dfs(inputs, output, T, ctx)
+        self.assertTrue(valid)
+        self.assertTrue(len(prefixmap))
+
+
+
+
 
     def test_impossible(self):
         """Return the first n primes which is impossible in this language."""
@@ -38,9 +52,11 @@ class TestSearch(unittest.TestCase):
         weights = np.ones(len(used))
         ctx = Context(dict(zip(used, weights)))
 
-        input_types = [LIST]
+        input_type_combinations = [
+            [LIST]
+        ]
         T = 1
-        programs = enumerate_programs(input_types, T, ctx)
+        programs = enumerate_programs(input_type_combinations, T, ctx, 1000)
         self.assertEqual(len(programs), 8)
 
 if __name__ == '__main__':
