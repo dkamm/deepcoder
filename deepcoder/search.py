@@ -5,101 +5,106 @@ import multiprocessing
 import queue
 import time
 
+import numpy as np
+
 import tqdm
 
 from deepcoder.dsl.constants import NULL
-from deepcoder.dsl.variable import Variable
+from deepcoder.dsl.value import IntValue
 from deepcoder.dsl import types
 from deepcoder.dsl.program import Program, get_unused_indices
 
-def iterate_inputs(f, typemap):
-    """Yields the cartesian product over valid inputs for f according to typemap.
+def iterate_inputs(f, type_to_inputs):
+    """Yields the cartesian product over valid inputs for f according to type_to_inputs.
 
     Args:
         f: Function to get inputs for
-        typemap: type -> list of Function or Variable
+        type_to_inputs: type -> list of Value
     Yields:
         Tuple of mixed types (Variable or Function) representing arguments to f
     """
     argslists = []
     for input_type in f.type.input_types:
-        argslists.append(typemap[input_type])
+        argslists.append(type_to_inputs[input_type])
     for args in itertools.product(*argslists):
         yield args
 
-def dfs(inputs, output, T, ctx):
+def dfs(examples, T, ctx, gas=np.inf):
     """Runs dfs search up to depth T or until a program is found that matches output.
     Args:
-        inputs: list of int or list
-        output: int or list
+        examples: list of tuples of (inputs, output)
         T: max depth
         ctx: Context. used to restrict/order the set of functions that dfs searches over.
+        gas (int): limit on number of node expansions. default to np.inf (unlimited)
 
     Returns:
-        tuple of valid and prefixmap
+        tuple of solution program, number of steps
     """
-
-    input_variables = []
-    for i, input in enumerate(inputs):
-        if isinstance(input, list):
-            typ = types.LIST
-        elif isinstance(input, int):
-            typ = types.INT
-        else:
-            raise TypeError('input must be str or list, got {}'.format(type(input)))
-        input_variables.append(Variable(str(i), input, typ))
+    ns = { 'nb_steps': 0,
+           'solution': None,
+           'gas' : gas }
 
     # init
-    inputtypemap = collections.defaultdict(list)
-    prefixmap = {}
-    for i, x in enumerate(input_variables):
-        input_types = [x.type for x in input_variables[:i+1]]
-        p_base = Program(input_types, tuple())
-        prefixmap[p_base] = x
-        inputtypemap[x.type].append(x)
-    valid = []
+    input_types = [x.type for x in examples[0][0]]
+    input_type_to_inputs = collections.defaultdict(list)
+    for i, input_type in enumerate(input_types):
+        input_type_to_inputs[input_type].append(i)
+    p_base = Program(input_types, tuple())
+
+    def is_solution(program):
+        for inputs, output in examples:
+            if program(*inputs) != output:
+                return False
+        return True
+
+    def has_null(program):
+        for inputs, _ in examples:
+            if program(*inputs) == IntValue(NULL):
+                return False
+        return True
 
     def dfshelper(p_base, t):
-        if prefixmap[p_base].x == output:
-            valid.append(p_base)
+        ns['nb_steps'] += 1
+        ns['gas'] -= 1
+        if is_solution(p_base):
+            ns['solution'] = p_base
+            return True
+
+        if ns['gas'] <= 0:
             return True
 
         if t == T:
             return
 
-        typemap = collections.defaultdict(list)
-        for k, v in inputtypemap.items():
-            typemap[k] += v
+        # type -> list of input indices / Functions
+        type_to_inputs = collections.defaultdict(list)
+        for k, v in input_type_to_inputs.items():
+            type_to_inputs[k] += v
 
         used = set()
         for i, stmt in enumerate(p_base.stmts):
-            p = Program(p_base.input_types, p_base.stmts[:i+1])
-            v = prefixmap[p]
+            program = Program(p_base.input_types, p_base.stmts[:i+1])
             used.add(stmt)
-            if v.x != NULL:
+            if has_null(program):
                 # don't consider NULL for input iteration
-                typemap[v.type].append(v)
+                # favor more recent statements
+                output_type = stmt[0].output_type
+                type_to_inputs[output_type].insert(0, (len(p_base.input_types) + i))
 
         for k, v in ctx.typemap.items():
-            typemap[k] += v
+            type_to_inputs[k] += v
 
         for f in ctx.functions:
-            for args in iterate_inputs(f, typemap):
+            for args in iterate_inputs(f, type_to_inputs):
                 stmt = (f, args)
                 if stmt in used:
                     continue
-                raw_args = [x.x for x in args]
-                y = f(*raw_args)
-                #if y == NULL:
-                #    # throw out null results
-                #    continue
-                p = Program(p_base.input_types, list(p_base.stmts) + [stmt])
-                prefixmap[p] = Variable(str(t + len(inputs)), y, f.output_type)
-                if dfshelper(p, t + 1):
+                program = Program(p_base.input_types, list(p_base.stmts) + [stmt])
+                if dfshelper(program, t + 1):
                     return True
 
     dfshelper(p_base, 0)
-    return valid, prefixmap
+    return ns['solution'], ns['nb_steps']
 
 def enumerate_helper(input_types, T, ctx, result_queue, stop_queue):
     program_base = Program(input_types, [])
@@ -125,16 +130,16 @@ def enumerate_helper(input_types, T, ctx, result_queue, stop_queue):
             # on another enumeration
             return
 
-        typemap = collections.defaultdict(list)
+        type_to_inputs = collections.defaultdict(list)
         for i, typ in enumerate(program_base.types):
-            typemap[typ].append(i)
+            type_to_inputs[typ].append(i)
 
         for k, v in ctx.typemap.items():
-            typemap[k] += v
+            type_to_inputs[k] += v
 
         used = set(program_base.stmts)
         for f in ctx.functions:
-            for args in iterate_inputs(f, typemap):
+            for args in iterate_inputs(f, type_to_inputs):
 
                 stmt = f, args
                 if stmt in used:

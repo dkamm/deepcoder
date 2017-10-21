@@ -7,7 +7,7 @@ import tqdm
 from deepcoder.context import Context
 from deepcoder.dsl import constraint
 from deepcoder.dsl import impl
-from deepcoder.dsl.program import prune, Program, is_same
+from deepcoder.dsl.program import prune, Program
 from deepcoder.dsl.types import INT, LIST
 from deepcoder.search import enumerate_programs
 
@@ -47,16 +47,23 @@ def main():
     # train / test split
     random.shuffle(programs)
 
-    train_programs = set(programs)
-    test_programs = []
-    pbar = tqdm.tqdm(total=args.nb_test)
-    for program in programs:
-        # enforce semantically disjoint test set
-        if (len(test_programs) < args.nb_test and
-            is_disjoint(program, train_programs - {program})):
-           test_programs.append(program)
-           train_programs.discard(program)
-           pbar.update(1)
+    train_programs = programs[:args.nb_train]
+    test_programs = programs[args.nb_train:args.nb_train + args.nb_test]
+
+    # TODO: rethink how to enforce semantic disjoint.
+    # Hard to get exactly nb_train/nb_test programs where nb_test is
+    # semantic disjoint from train.
+
+    #train_programs = set(programs)
+    #test_programs = []
+    #pbar = tqdm.tqdm(total=args.nb_test)
+    #for program in programs:
+    #    # enforce semantically disjoint test set
+    #    if (len(test_programs) < args.nb_test and
+    #        is_disjoint(program, train_programs - {program})):
+    #       test_programs.append(program)
+    #       train_programs.discard(program)
+    #       pbar.update(1)
 
     train_outfile = args.outfile.replace('.txt', '') + '_train.txt'
     test_outfile = args.outfile.replace('.txt', '') + '_test.txt'

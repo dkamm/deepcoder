@@ -3,18 +3,19 @@ import unittest
 import numpy as np
 
 from deepcoder.dsl.program import Program, prune, get_unused_indices
+from deepcoder.dsl.value import IntValue, ListValue
 
 class TestProgram(unittest.TestCase):
     def test_basic(self):
         # takes the second highest negative number
         prefix = 'LIST|INT|FILTER,<0,0|SORT,2|REVERSE,3|ACCESS,1,4'
-        p = Program.parse(prefix)
+        program = Program.parse(prefix)
 
-        expected = -2
-        actual = p([1, -5, -3, -4, -2, -1, 2, 3], 1)
+        expected = IntValue(-2)
+        actual = program(ListValue([1, -5, -3, -4, -2, -1, 2, 3]), IntValue(1))
 
         self.assertEqual(actual, expected)
-        self.assertEqual(p.toprefix(), prefix)
+        self.assertEqual(program.toprefix(), prefix)
 
 
     def test_prune(self):

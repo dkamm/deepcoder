@@ -4,6 +4,7 @@ import numpy as np
 
 from deepcoder.dsl import impl
 from deepcoder.dsl.types import INT, LIST
+from deepcoder.dsl.value import IntValue, ListValue
 from deepcoder.search import dfs, enumerate_programs
 from deepcoder.context import Context
 
@@ -11,40 +12,54 @@ class TestSearch(unittest.TestCase):
     def test_dfs(self):
         ctx = Context(dict(zip(impl.FUNCTIONS, np.ones(len(impl.FUNCTIONS)))))
 
-        inputs = [[1,2,3,4,5]]
-        output = [2,4,6,8,10]
+        inputs_list = [
+            [ListValue([1,2,3,4,5])],
+        ]
+        output_list = [
+            ListValue([2,4,6,8,10]),
+        ]
+        examples = list(zip(inputs_list, output_list))
+
 
         T = 2
-        valid, prefixmap = dfs(inputs, output, T, ctx)
-        self.assertTrue(valid)
-        self.assertTrue(len(prefixmap))
+        solution, nb_steps = dfs(examples, T, ctx)
+        for inputs, output in examples:
+            self.assertEqual(solution(*inputs), output)
+        self.assertTrue(nb_steps > 10)
 
     def test_dfs1(self):
         ctx = Context(dict(zip(impl.FUNCTIONS, np.ones(len(impl.FUNCTIONS)))))
 
-        inputs = [[1,-2,3,-4,5,-6,7]]
-        output = [1,3,15,105]
+        inputs_list = [
+            [ListValue([1,-2,3,-4,5,-6,7])],
+        ]
+        output_list = [
+            ListValue([1,3,15,105])
+        ]
+        examples = list(zip(inputs_list, output_list))
 
         T = 3
-        valid, prefixmap = dfs(inputs, output, T, ctx)
-        self.assertTrue(valid)
-        self.assertTrue(len(prefixmap))
-
-
-
+        solution, nb_steps = dfs(examples, T, ctx)
+        for inputs, output in examples:
+            self.assertEqual(solution(*inputs), output)
+        self.assertTrue(nb_steps > 10)
 
 
     def test_impossible(self):
         """Return the first n primes which is impossible in this language."""
         ctx = Context(dict(zip(impl.FUNCTIONS, np.ones(len(impl.FUNCTIONS)))))
 
-        inputs = [list(range(6))]
-        output = [2,3,5,7,11,13]
+        inputs_list = [
+            [ListValue(list(range(6)))],
+        ]
+        output_list = [ListValue([2,3,5,7,11,13])]
+
+        examples = list(zip(inputs_list, output_list))
 
         T = 2
-        valid, prefixmap = dfs(inputs, output, T, ctx)
-        self.assertFalse(valid)
-        self.assertTrue(len(prefixmap) > 2000)
+        solution, nb_steps = dfs(examples, T, ctx)
+        self.assertFalse(solution)
+        self.assertTrue(nb_steps > 2000)
 
 
     def test_enumerate(self):

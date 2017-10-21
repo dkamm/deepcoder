@@ -1,28 +1,31 @@
+from deepcoder.dsl.value import Value
 from deepcoder.dsl.types import FunctionType
 
-class Function(object):
+class Function(Value):
     def __init__(self, name, f, input_type, output_type):
+        super(Function, self).__init__(f, FunctionType(input_type, output_type))
         self.name = name
-        self.f = f
-        self.input_type = input_type
-        self.output_type = output_type
 
     def __call__(self, *args):
-        return self.f(*args)
+        raw_args = [x.val for x in args]
+        output_val = self.val(*raw_args)
+        return Value.construct(output_val, self.output_type)
 
     @property
-    def x(self):
-        return self.f
+    def input_type(self):
+        return self.type.input_type
 
     @property
-    def type(self):
-        return FunctionType(self.input_type, self.output_type)
+    def output_type(self):
+        return self.type.output_type
 
-    #def __eq__(self, other):
-    #    return self.name == other.name
+    def __eq__(self, other):
+        if not isinstance(other, Function):
+            return False
+        return self.name == other.name
 
-    #def __hash__(self):
-    #    return hash(self.name)
+    def __hash__(self):
+        return hash(self.name)
 
     def __repr__(self):
         return str(self)

@@ -1,6 +1,7 @@
 import collections
 
-from deepcoder.dsl.impl import LAMBDAS
+import numpy as np
+from deepcoder.dsl.impl import FUNCTIONS, LAMBDAS
 
 class Context(object):
     def __init__(self, scores_map):
@@ -21,3 +22,4 @@ class Context(object):
         """Returns functions to iterate over in search."""
         return self._functions
 
+DefaultContext = Context(dict(zip(FUNCTIONS, np.ones(len(FUNCTIONS)))))

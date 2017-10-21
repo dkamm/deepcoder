@@ -6,7 +6,7 @@ import numpy as np
 from deepcoder.dsl import impl
 from deepcoder.dsl.constants import INTMIN, INTMAX
 from deepcoder.dsl.types import INT, LIST
-from deepcoder.dsl.variable import Variable
+from deepcoder.dsl.value import Value
 
 L = 20 # max length of list
 
@@ -318,14 +318,13 @@ def get_input_output_examples(program, M=5):
     constraints = propagate_constraints(program)
 
     for i in range(M):
-        input_vars = []
+        input_vals = []
         for j, (input_type, constraint) in enumerate(zip(program.input_types, constraints)):
-            val = sample(constraint)
-            var = Variable(str(j), val, input_type)
-            input_vars.append(var)
-        output = program(*[x.val for x in input_vars])
-        output_var = Variable('out', output, program.types[-1])
-        examples.append((input_vars, output_var))
+            raw_val = sample(constraint)
+            val = Value.construct(raw_val, input_type)
+            input_vals.append(val)
+        output_val = program(*input_vals)
+        examples.append((input_vals, output_val))
 
     return examples
 
@@ -338,8 +337,7 @@ def is_same(program, other, input_output_examples=None, M=5):
     if not input_output_examples:
         input_output_examples = get_input_output_examples(program, M)
     for inputs, output in input_output_examples:
-        raw_inputs = [x.val for x in inputs]
-        other_output_val = other(*raw_inputs)
-        if output.val != other_output_val:
+        other_output = other(*inputs)
+        if output != other_output:
             return False
     return True

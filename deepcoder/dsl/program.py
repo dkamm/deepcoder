@@ -21,36 +21,26 @@ def prune(program):
     N = len(program.input_types) + len(program.stmts)
 
     offsets = [0] * N
-    useds = [True] * N
-
-    def get_is_used(i):
-        for _, inputs in program.stmts:
-            for x in inputs:
-                if x == i:
-                    return True
-
-    for i in range(N):
-        used = get_is_used(i) or i == N - 1
-        if not used:
-            for j in range(i+1, N):
-                offsets[j] -= 1
-        useds[i] = used
+    unused_indices = sorted(list(get_unused_indices(program)))
+    for i in unused_indices:
+        for j in range(i, N):
+            offsets[j] -= 1
 
     input_types = []
     for i, input_type in enumerate(program.input_types):
-        if useds[i]:
+        if i not in unused_indices:
             input_types.append(input_type)
 
     stmts = []
-    for i, (f, inputs) in enumerate(program.stmts):
-        if not useds[i + len(program.input_types)]:
-            continue
-        new_inputs = []
-        for x in inputs:
-            if isinstance(x, int):
-                x += offsets[x]
-            new_inputs.append(x)
-        stmts.append((f, new_inputs))
+    for i, (f, args) in enumerate(program.stmts):
+        idx = i + len(program.input_types)
+        if idx not in unused_indices:
+            new_args = []
+            for arg in args:
+                if isinstance(arg, int):
+                    arg += offsets[arg]
+                new_args.append(arg)
+            stmts.append((f, new_args))
 
     return Program(input_types, stmts)
 
