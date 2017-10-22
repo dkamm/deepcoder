@@ -1,5 +1,6 @@
 import collections
 import concurrent.futures
+import copy
 import itertools
 import multiprocessing
 import queue
@@ -9,6 +10,7 @@ import numpy as np
 
 import tqdm
 
+from deepcoder import context
 from deepcoder.dsl.constants import NULL
 from deepcoder.dsl.value import IntValue
 from deepcoder.dsl import types
@@ -225,7 +227,60 @@ def enumerate_programs(input_type_combinations, T, ctx, max_nb_programs):
     join()
     return programs
 
-def search_and_add():
-    # TODO
-    pass
+
+def generate_contexts(final_ctx):
+    scores_map = {}
+    score = 0
+
+    def _get_nearest_partner(f):
+        """Returns the partner function to f with the highest score.
+        If f is lambda, partner must be a regular function.
+        If f is a function and takes lambda as first argument,
+        partner is a lambda.
+        A function that doesn't take any lambdas is its own patner.
+
+        There are no functions in dsl that take multiple lambdas or a lambda that is not the first argument.
+
+        Arguments:
+            f (Function): function to find partner for.
+
+        Returns:
+            Function or None. None is if there is no valid partner.
+        """
+        if f in final_ctx.functions:
+            input_type = f.type.input_types[0]
+            if not isinstance(input_type, types.FunctionType):
+                return f
+            if (input_type in final_ctx.typemap and
+                final_ctx.typemap[input_type]):
+                return final_ctx.typemap[input_type][0]
+        else:
+            for partner in final_ctx.functions:
+                if partner.type.input_types[0] == f.type:
+                    return partner
+
+    partners = [_get_nearest_partner(x) for x, _ in final_ctx.items]
+
+    for i, (f, score) in enumerate(final_ctx.items):
+        partner = partners[i]
+        if not partner or f in scores_map:
+            continue
+
+        scores_map[f] = score
+
+        if partner not in scores_map:
+            partner_score = final_ctx.scores_map[partner]
+            scores_map[partner] = partner_score
+
+        yield context.Context(copy.copy(scores_map))
+
+def sort_and_add(examples, T, final_ctx, gas=np.inf):
+    solution = None
+    nb_steps_list = []
+    for ctx in generate_contexts(final_ctx):
+        solution, nb_steps = dfs(examples, T, ctx, gas)
+        nb_steps_list.append(nb_steps)
+        if solution:
+            break
+    return solution, nb_steps_list
 

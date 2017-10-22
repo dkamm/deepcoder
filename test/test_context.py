@@ -18,11 +18,11 @@ class TestContext(unittest.TestCase):
 
         self.assertEqual(set(ctx.functions), {impl.MAP, impl.FILTER, impl.COUNT})
         func_scores = [scores_map[x] for x in ctx.functions]
-        self.assertEqual(func_scores, sorted(func_scores))
+        self.assertEqual(func_scores, list(reversed(sorted(func_scores))))
 
         for _, funcs in ctx.typemap.items():
             func_scores = [scores_map[x] for x in funcs]
-            self.assertEqual(func_scores, sorted(func_scores))
+            self.assertEqual(func_scores, list(reversed(sorted(func_scores))))
 
         self.assertEqual(len(ctx.typemap), 4)
 
