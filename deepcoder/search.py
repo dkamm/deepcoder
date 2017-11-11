@@ -11,10 +11,9 @@ import numpy as np
 import tqdm
 
 from deepcoder import context
-from deepcoder.dsl.constants import NULL
-from deepcoder.dsl.value import IntValue
+from deepcoder.dsl.value import IntValue, NULLVALUE
 from deepcoder.dsl import types
-from deepcoder.dsl.program import Program, get_unused_indices
+from deepcoder.dsl.program import Program, get_unused_indices, ResultOutOfRangeError
 
 def iterate_inputs(f, type_to_inputs):
     """Yields the cartesian product over valid inputs for f according to type_to_inputs.
@@ -30,6 +29,25 @@ def iterate_inputs(f, type_to_inputs):
         argslists.append(type_to_inputs[input_type])
     for args in itertools.product(*argslists):
         yield args
+
+def is_solution(program, examples):
+    try:
+        for inputs, output in examples:
+            try:
+                if program(*inputs) != output:
+                    return False
+            except ResultOutOfRangeError:
+                return False
+        return True
+    except:
+        print(program, inputs, output)
+        raise
+
+def has_null(program, examples):
+    for inputs, _ in examples:
+        if program(*inputs) == NULLVALUE:
+            return True
+    return False
 
 def dfs(examples, T, ctx, gas=np.inf):
     """Runs dfs search up to depth T or until a program is found that matches output.
@@ -53,22 +71,10 @@ def dfs(examples, T, ctx, gas=np.inf):
         input_type_to_inputs[input_type].append(i)
     p_base = Program(input_types, tuple())
 
-    def is_solution(program):
-        for inputs, output in examples:
-            if program(*inputs) != output:
-                return False
-        return True
-
-    def has_null(program):
-        for inputs, _ in examples:
-            if program(*inputs) == IntValue(NULL):
-                return False
-        return True
-
     def dfshelper(p_base, t):
         ns['nb_steps'] += 1
         ns['gas'] -= 1
-        if is_solution(p_base):
+        if is_solution(p_base, examples):
             ns['solution'] = p_base
             return True
 
@@ -87,11 +93,9 @@ def dfs(examples, T, ctx, gas=np.inf):
         for i, stmt in enumerate(p_base.stmts):
             program = Program(p_base.input_types, p_base.stmts[:i+1])
             used.add(stmt)
-            if has_null(program):
-                # don't consider NULL for input iteration
-                # favor more recent statements
-                output_type = stmt[0].output_type
-                type_to_inputs[output_type].insert(0, (len(p_base.input_types) + i))
+            # favor more recent statements
+            output_type = stmt[0].output_type
+            type_to_inputs[output_type].insert(0, (len(p_base.input_types) + i))
 
         for k, v in ctx.typemap.items():
             type_to_inputs[k] += v
@@ -102,6 +106,13 @@ def dfs(examples, T, ctx, gas=np.inf):
                 if stmt in used:
                     continue
                 program = Program(p_base.input_types, list(p_base.stmts) + [stmt])
+
+                try:
+                    if t + 1 < T and has_null(program, examples):
+                        continue
+                except ResultOutOfRangeError:
+                    continue
+
                 if dfshelper(program, t + 1):
                     return True
 
@@ -283,4 +294,3 @@ def sort_and_add(examples, T, final_ctx, gas=np.inf):
         if solution:
             break
     return solution, nb_steps_list
-

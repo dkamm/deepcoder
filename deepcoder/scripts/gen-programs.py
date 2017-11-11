@@ -47,6 +47,9 @@ def main():
     # train / test split
     random.shuffle(programs)
 
+    args.nb_test = min(len(programs) / 2, args.nb_test)
+    args.nb_train = min(len(programs) - args.nb_test, args.nb_train)
+
     train_programs = programs[:args.nb_train]
     test_programs = programs[args.nb_train:args.nb_train + args.nb_test]
 

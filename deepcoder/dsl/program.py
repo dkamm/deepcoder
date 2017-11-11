@@ -1,9 +1,11 @@
 
 import numpy as np
 
-from deepcoder.dsl.constants import NULL
+from deepcoder.dsl.constants import NULL, INTMIN, INTMAX
 from deepcoder.dsl.types import INT, LIST
 from deepcoder.dsl.impl import NAME2FUNC
+from deepcoder.dsl.function import Function
+from deepcoder.dsl.value import IntValue, ListValue
 
 # Parsed program
 
@@ -44,6 +46,9 @@ def prune(program):
 
     return Program(input_types, stmts)
 
+class ResultOutOfRangeError(Exception):
+    pass
+
 class Program(object):
     """
     Attributes:
@@ -57,6 +62,14 @@ class Program(object):
         self.stmts = tuple(stmts)
         self.types = tuple(list(self.input_types) + [f.type.output_type for f, _ in self.stmts])
         self.prefix = self.toprefix()
+        self._hash = hash(self.prefix)
+
+    def functions(self):
+        for func, args in self.stmts:
+            yield func
+            for arg in args:
+                if isinstance(arg, Function):
+                    yield arg
 
     def toprefix(self):
         toks = [x.name for x in self.input_types]
@@ -67,16 +80,16 @@ class Program(object):
         return '|'.join(toks)
 
     def __str__(self):
-        return self.toprefix()
+        return self.prefix
 
     def __repr__(self):
         return str(self)
 
     def __hash__(self):
-        return hash(self.toprefix())
+        return self._hash
 
     def __eq__(self, other):
-        return self.prefix == other.prefix
+        return hash(self) == hash(other)
 
     def __lt__(self, other):
         #if len(self.types) < len(other.types):
@@ -123,6 +136,16 @@ class Program(object):
                 else:
                     args.append(input)
             val = f(*args)
+            if not in_range(val):
+                raise ResultOutOfRangeError(
+                    '{}({}) -> {}'.format(f, inputs, val))
             vals.append(val)
         return vals[-1]
 
+def in_range(val):
+    if isinstance(val, IntValue):
+        val = ListValue([val.val])
+    for x in val.val:
+        if x < INTMIN or x > INTMAX:
+            return False
+    return True

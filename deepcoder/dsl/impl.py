@@ -22,13 +22,13 @@ ACCESS = Function('ACCESS', lambda n, xs: xs[n] if n >= 0 and len(xs) > n else N
 PLUS1 = Function('+1', lambda x: x + 1, INT, INT)
 MINUS1 = Function('-1', lambda x: x - 1, INT, INT)
 TIMES2 = Function('*2', lambda x: x * 2, INT, INT)
-DIV2 = Function('//2', lambda x: x // 2, INT, INT)
+DIV2 = Function('/2', lambda x: int(x / 2), INT, INT)
 TIMESNEG1 = Function('*-1', lambda x: -x, INT, INT)
 POW2 = Function('**2', lambda x: x ** 2, INT, INT)
 TIMES3 = Function('*3', lambda x: x * 3, INT, INT)
-DIV3 = Function('//3', lambda x: x // 3, INT, INT)
+DIV3 = Function('/3', lambda x: int(x / 3), INT, INT)
 TIMES4 = Function('*4', lambda x: x * 4, INT, INT)
-DIV4 = Function('//4', lambda x: x // 4, INT, INT)
+DIV4 = Function('/4', lambda x: int(x / 4), INT, INT)
 
 GT0 = Function('>0', lambda x: x > 0, INT, BOOL)
 LT0 = Function('<0', lambda x: x < 0, INT, BOOL)
@@ -38,25 +38,25 @@ ODD = Function('ODD', lambda x: x % 2 == 1, INT, BOOL)
 LPLUS = Function('+', lambda x, y: x + y, (INT, INT), INT)
 LMINUS = Function('-', lambda x, y: x - y, (INT, INT), INT)
 LTIMES = Function('*', lambda x, y: x * y, (INT, INT), INT)
-#LDIV = Function('//', lambda x, y: x // y if y else NULL, (INT, INT), INT)
+#LDIV = Function('/', lambda x, y: x / y if y else NULL, (INT, INT), INT)
 LMIN = Function('min', min, (INT, INT), INT)
 LMAX = Function('max', max, (INT, INT), INT)
 
 # higher order functions
 def _scan1l(f, xs):
-    ys = []
+    ys = [0] * len(xs)
     for i, x in enumerate(xs):
         if i:
-            ys.append(f(ys[-1], x))
+            ys[i] = f(ys[i - 1], x)
         else:
-            ys.append(x)
+            ys[i] = x
     return ys
 
 MAP = Function('MAP', lambda f, xs: [f(x) for x in xs], (FunctionType(INT, INT), LIST), LIST)
 FILTER = Function('FILTER', lambda f, xs: [x for x in xs if f(x)], (FunctionType(INT, BOOL), LIST), LIST)
 COUNT = Function('COUNT', lambda f, xs: len([x for x in xs if f(x)]), (FunctionType(INT, BOOL), LIST), INT)
 SCAN1L = Function('SCAN1L', _scan1l, (FunctionType((INT, INT), INT), LIST), LIST)
-ZIPWITH = Function('ZIPWITH', lambda f, xs, ys: [f(x, y) for (x, y) in zip(xs, ys)], (FunctionType((INT, INT), INT), LIST, LIST), LIST)
+ZIPWITH = Function('ZIPWITH', lambda f, xs, ys: [f(x, y) for x, y in zip(xs, ys)], (FunctionType((INT, INT), INT), LIST, LIST), LIST)
 
 LAMBDAS = [
     PLUS1,
@@ -104,4 +104,3 @@ FUNCTIONS = [
 ] + LAMBDAS
 
 NAME2FUNC = {x.name : x for x in FUNCTIONS}
-
