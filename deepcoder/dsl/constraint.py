@@ -98,6 +98,8 @@ def sample(constraint):
         raise ValueError('invalid constraint {}'.format(constraint))
 
     if isinstance(constraint, IntConstraint):
+        if constraint.vmin == constraint.vmax:
+            return constraint.vmin
         return np.random.randint(constraint.vmin, constraint.vmax)
     elif isinstance(constraint, ListConstraint):
         if constraint.lmin == constraint.lmax:
@@ -110,7 +112,7 @@ def sample(constraint):
         return [np.random.randint(ic.vmin, ic.vmax) for _ in range(l)]
 
 
-def get_constraints_from_stmt(stmt, constraint):
+def get_constraints_from_stmt(stmt, constraint, null_allowed=False):
     """Returns a list of constraint to apply to inputs of stmt or None which means
     no constraint imposed.
 
@@ -138,6 +140,8 @@ def get_constraints_from_stmt(stmt, constraint):
         stmt (tuple): statement to consider.
         constraint (IntConstraint or ListConstraint): constraint on output
             of stmt.
+        null_allowed(bool): True if statement allowed to output null, False otherwise. 
+            Relevant for HEAD, TAIL, ACCESS which can output NULL.
     """
     f, inputs = stmt
 
@@ -198,8 +202,13 @@ def get_constraints_from_stmt(stmt, constraint):
         return [ListConstraint(constraint.lmin, constraint.lmax, int_constraints)]
 
     elif f == impl.ACCESS:
-        return [IntConstraint(vmin=0),
-                ListConstraint(int_constraints=[copy.copy(constraint) for _ in range(L + 1)])]
+        if null_allowed:
+            return [IntConstraint(vmin=0),
+                    ListConstraint(int_constraints=[copy.copy(constraint) for _ in range(L + 1)])]
+        else:
+            # have to clip to 0 since list length may be 1
+            return [IntConstraint(vmin=0, vmax=0),
+                    ListConstraint(lmin=1, int_constraints=[copy.copy(constraint) for _ in range(L + 1)])]
 
     elif f in [impl.TAKE, impl.DROP]:
         return [IntConstraint(vmin=0),
@@ -269,10 +278,19 @@ def get_constraints_from_stmt(stmt, constraint):
         # no constraint
         return [ListConstraint()]
 
-    elif f in [impl.HEAD, impl.TAIL, impl.MINIMUM, impl.MAXIMUM]:
+    elif f in [impl.HEAD, impl.TAIL]:
+        if null_allowed:
+            # list constrained to int constraint
+            return [ListConstraint(int_constraints=[constraint] * L)]
+        else:
+            int_constraints = []
+            for l in range(L+1):
+                int_constraints.append((IntConstraint(0, l-1)))
+            return [ListConstraint(int_constraints=int_constraints)]
+
+    elif f in [impl.MINIMUM, impl.MAXIMUM]:
         # list constrained to int constraint
         return [ListConstraint(int_constraints=[constraint] * L)]
-
 
     elif f in [impl.FILTER, impl.REVERSE, impl.SORT]:
         # these pipe just through constraint of output
@@ -295,22 +313,22 @@ def propagate_constraints(p, output_constraint=None):
         # constrain last statement
         constraints[-1] = output_constraint
 
-    def _get_input_constraints(stmt):
+    def _get_input_indices(stmt):
         _, inputs = stmt
-        ret = []
-        for x in inputs:
-            if isinstance(x, int):
-                ret.append(constraints[x])
-        return ret
+        return [x for x in inputs if isinstance(x, int)]
 
+    null_allowed = [True] * len(p.types)
     for i, stmt in enumerate(reversed(p.stmts)):
         idx = len(p.types) - 1 - i
-        oc = constraints[idx]
-        implied_constraints = get_constraints_from_stmt(stmt, oc)
+        original_constraint = constraints[idx]
+        implied_constraints = get_constraints_from_stmt(stmt, original_constraint, null_allowed[idx])
         if implied_constraints:
-            input_constraints = _get_input_constraints(stmt)
+            input_indices = _get_input_indices(stmt)
+            input_constraints = [constraints[x] for x in input_indices]
             for implied_constraint, input_constraint in zip(implied_constraints, input_constraints):
                 input_constraint.apply(implied_constraint)
+            for input_idx in input_indices:
+                null_allowed[input_idx] = False
     return constraints
 
 def get_input_output_examples(program, M=5):

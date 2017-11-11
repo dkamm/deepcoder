@@ -1,11 +1,11 @@
 
 import numpy as np
 
-from deepcoder.dsl.constants import NULL, INTMIN, INTMAX
+from deepcoder.dsl.constants import INTMIN, INTMAX
 from deepcoder.dsl.types import INT, LIST
 from deepcoder.dsl.impl import NAME2FUNC
 from deepcoder.dsl.function import Function
-from deepcoder.dsl.value import IntValue, ListValue
+from deepcoder.dsl.value import IntValue, ListValue, NULLVALUE
 
 # Parsed program
 
@@ -45,9 +45,6 @@ def prune(program):
             stmts.append((f, new_args))
 
     return Program(input_types, stmts)
-
-class ResultOutOfRangeError(Exception):
-    pass
 
 class Program(object):
     """
@@ -126,7 +123,7 @@ class Program(object):
 
     def __call__(self, *inputs):
         if not self.stmts:
-            return NULL
+            return NULLVALUE
         vals = list(inputs)
         for f, inputs in self.stmts:
             args = []
@@ -136,16 +133,5 @@ class Program(object):
                 else:
                     args.append(input)
             val = f(*args)
-            if not in_range(val):
-                raise ResultOutOfRangeError(
-                    '{}({}) -> {}'.format(f, inputs, val))
             vals.append(val)
         return vals[-1]
-
-def in_range(val):
-    if isinstance(val, IntValue):
-        val = ListValue([val.val])
-    for x in val.val:
-        if x < INTMIN or x > INTMAX:
-            return False
-    return True

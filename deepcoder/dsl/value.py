@@ -1,5 +1,5 @@
 from deepcoder.dsl import constants
-from deepcoder.dsl.types import INT, LIST
+from deepcoder.dsl.types import INT, LIST, NULLTYPE
 
 class Value(object):
     def __init__(self, val, typ):
@@ -35,6 +35,9 @@ class Value(object):
 
     @classmethod
     def construct(self, val, typ=None):
+        if val is None:
+            return NULLVALUE
+
         if typ is None:
             raw_type = type(val)
             if raw_type == int:
@@ -56,4 +59,4 @@ class ListValue(Value):
     def __init__(self, val):
         super(ListValue, self).__init__(val, LIST)
 
-NULLVALUE = IntValue(constants.NULL)
+NULLVALUE = Value(None, NULLTYPE)

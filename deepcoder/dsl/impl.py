@@ -1,21 +1,20 @@
 import collections
 
-from deepcoder.dsl.constants import NULL
 from deepcoder.dsl.function import Function
 from deepcoder.dsl.types import INT, BOOL, LIST, FunctionType
 
 # firstorder functions
-HEAD = Function('HEAD', lambda xs: xs[0] if xs else NULL, LIST, INT)
-TAIL = Function('TAIL', lambda xs: xs[-1] if xs else NULL, LIST, INT)
-MINIMUM = Function('MINIMUM', lambda xs: min(xs) if xs else NULL, LIST, INT)
-MAXIMUM = Function('MAXIMUM', lambda xs: max(xs) if xs else NULL, LIST, INT)
+HEAD = Function('HEAD', lambda xs: xs[0] if xs else None, LIST, INT)
+TAIL = Function('TAIL', lambda xs: xs[-1] if xs else None, LIST, INT)
+MINIMUM = Function('MINIMUM', lambda xs: min(xs) if xs else None, LIST, INT)
+MAXIMUM = Function('MAXIMUM', lambda xs: max(xs) if xs else None, LIST, INT)
 REVERSE = Function('REVERSE', lambda xs: xs[::-1], LIST, LIST)
 SORT = Function('SORT', sorted, LIST, LIST)
 SUM = Function('SUM', sum, LIST, INT)
 
 TAKE = Function('TAKE', lambda n, xs: xs[:n], (INT, LIST), LIST)
 DROP = Function('DROP', lambda n, xs: xs[n:], (INT, LIST), LIST)
-ACCESS = Function('ACCESS', lambda n, xs: xs[n] if n >= 0 and len(xs) > n else NULL, (INT, LIST), INT)
+ACCESS = Function('ACCESS', lambda n, xs: xs[n] if n >= 0 and len(xs) > n else None, (INT, LIST), INT)
 
 
 # lambda functions
@@ -38,7 +37,7 @@ ODD = Function('ODD', lambda x: x % 2 == 1, INT, BOOL)
 LPLUS = Function('+', lambda x, y: x + y, (INT, INT), INT)
 LMINUS = Function('-', lambda x, y: x - y, (INT, INT), INT)
 LTIMES = Function('*', lambda x, y: x * y, (INT, INT), INT)
-#LDIV = Function('/', lambda x, y: x / y if y else NULL, (INT, INT), INT)
+#LDIV = Function('/', lambda x, y: x / y if y else None, (INT, INT), INT)
 LMIN = Function('min', min, (INT, INT), INT)
 LMAX = Function('max', max, (INT, INT), INT)
 

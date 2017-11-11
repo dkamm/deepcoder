@@ -5,7 +5,7 @@ from deepcoder.dsl import impl
 from deepcoder.dsl.function import Function
 from deepcoder.dsl.constants import NULL
 from deepcoder.dsl.types import INT, BOOL, LIST, FunctionType
-from deepcoder.dsl.value import IntValue, ListValue
+from deepcoder.dsl.value import IntValue, ListValue, NULLVALUE
 
 class TestDSL(unittest.TestCase):
     def test_function_type(self):
@@ -36,10 +36,10 @@ class TestDSL(unittest.TestCase):
         self.assertEqual(impl.COUNT(impl.EVEN, ListValue([1,3,5,7])), IntValue(0))
         self.assertEqual(impl.ZIPWITH(impl.LMINUS, ListValue([1,2,3]), ListValue([2,3,4])), ListValue([-1, -1, -1]))
         self.assertEqual(impl.SCAN1L(impl.LTIMES, ListValue([1,2,3,4])), ListValue([1, 1*2, 1*2*3, 1*2*3*4]))
-        self.assertEqual(impl.MINIMUM(ListValue([])), IntValue(NULL))
-        self.assertEqual(impl.MAXIMUM(ListValue([])), IntValue(NULL))
-        self.assertEqual(impl.ACCESS(IntValue(0), ListValue([])), IntValue(NULL))
-        self.assertEqual(impl.ACCESS(IntValue(4), ListValue([1,2,3])), IntValue(NULL))
+        self.assertEqual(impl.MINIMUM(ListValue([])), NULLVALUE)
+        self.assertEqual(impl.MAXIMUM(ListValue([])), NULLVALUE)
+        self.assertEqual(impl.ACCESS(IntValue(0), ListValue([])), NULLVALUE)
+        self.assertEqual(impl.ACCESS(IntValue(4), ListValue([1,2,3])), NULLVALUE)
         self.assertEqual(impl.TAKE(IntValue(1), ListValue([])), ListValue([]))
 
 if __name__ == '__main__':

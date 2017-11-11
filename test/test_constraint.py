@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 
+from deepcoder.dsl import constants
 from deepcoder.dsl import constraint
 from deepcoder.dsl import impl
 from deepcoder.dsl.program import Program
@@ -149,6 +150,35 @@ class TestConstraint(unittest.TestCase):
         rhs = Program.parse('LIST|SCAN1L,max,0|MAXIMUM,1')
 
         self.assertTrue(constraint.is_same(lhs, rhs))
+
+    def test_null_allowed(self):
+        p = Program.parse('LIST|TAIL,0|ACCESS,1,0')
+        expected = [
+            constraint.ListConstraint(
+                lmin=1,
+                int_constraints=[constraint.IntConstraint(0, l-1) for l in range(constraint.L+1)] 
+            ),
+            constraint.IntConstraint(0, 256),
+            constraint.IntConstraint()
+        ]
+        output_constraint = constraint.IntConstraint()
+        actual = constraint.propagate_constraints(p, output_constraint)
+        self.assertEqual(expected, actual)
+
+    def test_null_allowed2(self):
+        p = Program.parse('LIST|INT|ACCESS,1,0|ACCESS,2,0')
+        expected = [
+            constraint.ListConstraint(
+                lmin=1,
+                int_constraints=[constraint.IntConstraint(0, constants.INTMAX) for l in range(constraint.L+1)] 
+            ),
+            constraint.IntConstraint(0,0),
+            constraint.IntConstraint(0,256),
+            constraint.IntConstraint()
+        ]
+        output_constraint = constraint.IntConstraint()
+        actual = constraint.propagate_constraints(p, output_constraint)
+        self.assertEqual(expected, actual)
 
 
 

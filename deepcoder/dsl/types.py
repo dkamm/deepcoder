@@ -18,6 +18,7 @@ class PrimitiveType(object):
 INT = PrimitiveType('INT')
 BOOL = PrimitiveType('BOOL')
 LIST = PrimitiveType('LIST')
+NULLTYPE = PrimitiveType('NULL')
 
 class FunctionType(PrimitiveType):
     def __init__(self, input_type, output_type):
@@ -27,4 +28,3 @@ class FunctionType(PrimitiveType):
         self.output_type = output_type
         # iterable
         self.input_types = (input_type,) if not isinstance(input_type, tuple) else input_type
-

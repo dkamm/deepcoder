@@ -2,7 +2,8 @@ import unittest
 
 import numpy as np
 
-from deepcoder.dsl.program import Program, prune, get_unused_indices, ResultOutOfRangeError
+from deepcoder.dsl.function import ResultOutOfRangeError
+from deepcoder.dsl.program import Program, prune, get_unused_indices
 from deepcoder.dsl.value import IntValue, ListValue
 
 class TestProgram(unittest.TestCase):

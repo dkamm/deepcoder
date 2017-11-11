@@ -28,7 +28,7 @@ def solve_samples(samples, T):
     rows = []
     pbar = tqdm.tqdm(total=len(samples))
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        for solution, walltime, steps_used in enumerate(executor.map(solve_sample, samples, [T] * len(samples))):
+        for solution, walltime, steps_used in executor.map(solve_sample, samples, [T] * len(samples)):
             rows.append({
                 'solution': solution,
                 'wall (ms)': walltime * 1000,

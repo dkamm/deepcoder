@@ -13,7 +13,8 @@ import tqdm
 from deepcoder import context
 from deepcoder.dsl.value import IntValue, NULLVALUE
 from deepcoder.dsl import types
-from deepcoder.dsl.program import Program, get_unused_indices, ResultOutOfRangeError
+from deepcoder.dsl.function import OutputOutOfRangeError, NullInputError
+from deepcoder.dsl.program import Program, get_unused_indices
 
 def iterate_inputs(f, type_to_inputs):
     """Yields the cartesian product over valid inputs for f according to type_to_inputs.
@@ -31,17 +32,10 @@ def iterate_inputs(f, type_to_inputs):
         yield args
 
 def is_solution(program, examples):
-    try:
-        for inputs, output in examples:
-            try:
-                if program(*inputs) != output:
-                    return False
-            except ResultOutOfRangeError:
-                return False
-        return True
-    except:
-        print(program, inputs, output)
-        raise
+    for inputs, output in examples:
+        if program(*inputs) != output:
+            return False
+    return True
 
 def has_null(program, examples):
     for inputs, _ in examples:
@@ -74,9 +68,14 @@ def dfs(examples, T, ctx, gas=np.inf):
     def dfshelper(p_base, t):
         ns['nb_steps'] += 1
         ns['gas'] -= 1
-        if is_solution(p_base, examples):
-            ns['solution'] = p_base
-            return True
+        try:
+            if is_solution(p_base, examples):
+                ns['solution'] = p_base
+                return True
+        except (NullInputError, OutputOutOfRangeError):
+            # throw out programs that have null inputs or any out of range output
+            # null outputs ok if unused
+            return
 
         if ns['gas'] <= 0:
             return True
@@ -110,7 +109,7 @@ def dfs(examples, T, ctx, gas=np.inf):
                 try:
                     if t + 1 < T and has_null(program, examples):
                         continue
-                except ResultOutOfRangeError:
+                except OutputOutOfRangeError:
                     continue
 
                 if dfshelper(program, t + 1):
