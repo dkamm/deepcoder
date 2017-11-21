@@ -1,6 +1,9 @@
 import argparse
 import json
+import tqdm
+
 from deepcoder.dsl import constraint
+from deepcoder.dsl.function import NullInputError
 from deepcoder.dsl.program import Program
 from deepcoder import converter
 
@@ -15,9 +18,16 @@ def main():
         programs = [Program.parse(l.rstrip()) for l in in_fh]
 
     datas = []
-    for program in programs:
+    for program in tqdm.tqdm(programs, total=len(programs)):
         data = {}
-        examples = constraint.get_input_output_examples(program, args.nb_examples)
+        examples = None
+        for _ in range(2):
+            try:
+                examples = constraint.get_input_output_examples(program, args.nb_examples)
+            except NullInputError:
+                continue
+        if not examples:
+            continue
         raw_examples = []
         for inputs, output in examples:
             raw_inputs = [x.val for x in inputs]

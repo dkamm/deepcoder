@@ -4,6 +4,7 @@ import copy
 import numpy as np
 
 from deepcoder.dsl import impl
+from deepcoder.dsl.function import OutputOutOfRangeError, NullInputError
 from deepcoder.dsl.constants import INTMIN, INTMAX
 from deepcoder.dsl.types import INT, LIST
 from deepcoder.dsl.value import Value
@@ -107,10 +108,7 @@ def sample(constraint):
         elif constraint.lmin < constraint.lmax:
             l = np.random.randint(constraint.lmin, constraint.lmax)
         ic = constraint.int_constraints[l]
-        if ic.vmin == ic.vmax:
-            return [ic.vmin] * l
-        return [np.random.randint(ic.vmin, ic.vmax) for _ in range(l)]
-
+        return [sample(ic) for _ in range(l)]
 
 def get_constraints_from_stmt(stmt, constraint, null_allowed=False):
     """Returns a list of constraint to apply to inputs of stmt or None which means
@@ -349,13 +347,16 @@ def get_input_output_examples(program, M=5):
 def is_same(program, other, input_output_examples=None, M=5):
     """input_output_examples can be passed in for speed
     (comparing same program to many others)"""
-    if (program.input_types != other.input_types or
-        program.types[-1] != other.types[-1]):
-        return False
-    if not input_output_examples:
-        input_output_examples = get_input_output_examples(program, M)
-    for inputs, output in input_output_examples:
-        other_output = other(*inputs)
-        if output != other_output:
+    try:
+        if (program.input_types != other.input_types or
+            program.types[-1] != other.types[-1]):
             return False
-    return True
+        if not input_output_examples:
+            input_output_examples = get_input_output_examples(program, M)
+        for inputs, output in input_output_examples:
+            other_output = other(*inputs)
+            if output != other_output:
+                return False
+        return True
+    except (OutputOutOfRangeError, NullInputError):
+        return False

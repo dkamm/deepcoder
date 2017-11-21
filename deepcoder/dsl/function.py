@@ -2,7 +2,7 @@ from deepcoder.dsl import constants
 from deepcoder.dsl.value import Value, IntValue, ListValue, NULLVALUE
 from deepcoder.dsl.types import FunctionType
 
-class ResultOutOfRangeError(Exception):
+class OutputOutOfRangeError(Exception):
     pass
 
 class NullInputError(Exception):
@@ -29,7 +29,7 @@ class Function(Value):
         output_raw = self.val(*raw_args)
         output_val = Value.construct(output_raw, self.output_type)
         if output_val != NULLVALUE and not in_range(output_val):
-            raise ResultOutOfRangeError('{}({})'.format(self.name, args))
+            raise OutputOutOfRangeError('{}({})'.format(self.name, args))
         return output_val
 
     @property

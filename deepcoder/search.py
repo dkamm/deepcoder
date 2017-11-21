@@ -212,26 +212,25 @@ def enumerate_programs(input_type_combinations, T, ctx, max_nb_programs):
                 return
             time.sleep(.1)
 
-    pbar = tqdm.tqdm(total=max_nb_programs)
+    with tqdm.tqdm(total=max_nb_programs) as pbar:
+        stopped = False
+        while not all_done():
+            if not stopped and len(programs) >= max_nb_programs:
+                stopped = True
+                stop_workers()
 
-    stopped = False
-    while not all_done():
-        if not stopped and len(programs) >= max_nb_programs:
-            stopped = True
-            stop_workers()
+            try:
+                result = result_queue.get_nowait()
+                if result is None:
+                    finished_cnt += 1
+                    continue
 
-        try:
-            result = result_queue.get_nowait()
-            if result is None:
-                finished_cnt += 1
+                program = Program.parse(result)
+                if len(programs) < max_nb_programs:
+                    programs.append(program)
+                    pbar.update(1)
+            except queue.Empty:
                 continue
-
-            program = Program.parse(result)
-            if len(programs) < max_nb_programs:
-                programs.append(program)
-                pbar.update(1)
-        except queue.Empty:
-            continue
     if not stopped:
         stop_workers()
     join()

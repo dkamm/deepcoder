@@ -7,6 +7,7 @@ import tqdm
 from deepcoder.context import Context
 from deepcoder.dsl import constraint
 from deepcoder.dsl import impl
+from deepcoder.dsl.function import OutputOutOfRangeError, NullInputError
 from deepcoder.dsl.program import prune, Program
 from deepcoder.dsl.types import INT, LIST
 from deepcoder.search import enumerate_programs
@@ -35,6 +36,7 @@ def main():
     parser.add_argument('--nb_test', type=int)
     parser.add_argument('--prog_len', type=int)
     parser.add_argument('--outfile', type=str)
+    parser.add_argument('--enforce_disjoint', action='store_true')
     args = parser.parse_args()
 
     ctx = Context(dict(zip(impl.FUNCTIONS, np.ones(len(impl.FUNCTIONS)))))
@@ -50,30 +52,41 @@ def main():
     args.nb_test = min(len(programs) / 2, args.nb_test)
     args.nb_train = min(len(programs) - args.nb_test, args.nb_train)
 
-    train_programs = programs[:args.nb_train]
-    test_programs = programs[args.nb_train:args.nb_train + args.nb_test]
+    if args.enforce_disjoint:
+        train_programs = set(programs)
+        test_programs = []
+        for program in tqdm.tqdm(programs, total=args.nb_test):
+            input_output_examples = None
+            for i in range(5):
+                try:
+                    input_output_examples = constraint.get_input_output_examples(program, M=2)
+                except NullInputError:
+                    continue
 
-    # TODO: rethink how to enforce semantic disjoint.
-    # Hard to get exactly nb_train/nb_test programs where nb_test is
-    # semantic disjoint from train.
+            if not input_output_examples:
+                train_programs.discard(program)
+                continue
 
-    #train_programs = set(programs)
-    #test_programs = []
-    #pbar = tqdm.tqdm(total=args.nb_test)
-    #for program in programs:
-    #    # enforce semantically disjoint test set
-    #    if (len(test_programs) < args.nb_test and
-    #        is_disjoint(program, train_programs - {program})):
-    #       test_programs.append(program)
-    #       train_programs.discard(program)
-    #       pbar.update(1)
+            same_programs = set()
+            for train_program in train_programs:
+                if constraint.is_same(program, train_program, input_output_examples):
+                    same_programs.add(train_program)
+
+            test_programs.append(program)
+            train_programs.difference_update(same_programs)
+
+            if len(test_programs) == args.nb_test:
+                break
+    else:
+        train_programs = programs[args.nb_train]
+        test_programs = programs[args.nb_train:args.nb_train + args.nb_test]
 
     train_outfile = args.outfile.replace('.txt', '') + '_train.txt'
     test_outfile = args.outfile.replace('.txt', '') + '_test.txt'
 
     for programs, outfile in zip([train_programs, test_programs],
         [train_outfile, test_outfile]):
-        print('writing ', outfile)
+        print('writing ', outfile, '({} programs)'.format(len(programs)))
         with open(outfile, 'w') as fh:
             for program in sorted(list(programs)):
                 fh.write(program.prefix + '\n')

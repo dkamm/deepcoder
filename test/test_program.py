@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from deepcoder.dsl.function import ResultOutOfRangeError
+from deepcoder.dsl.function import OutputOutOfRangeError
 from deepcoder.dsl.program import Program, prune, get_unused_indices
 from deepcoder.dsl.value import IntValue, ListValue
 
@@ -42,7 +42,7 @@ class TestProgram(unittest.TestCase):
             ListValue([-7, -9, 3, -11, -6, 7, -3, -12, -7, -5, 10, 11, -8, -8, 10])
         ]
         program = Program.parse(prefix)
-        self.assertRaises(ResultOutOfRangeError, program, *inputs)
+        self.assertRaises(OutputOutOfRangeError, program, *inputs)
 
 if __name__ == '__main__':
     unittest.main()
