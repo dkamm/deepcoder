@@ -29,11 +29,11 @@ class TestConstraint(unittest.TestCase):
         self.assertEqual(val, [])
 
 
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(constraint.InvalidConstraintError) as context:
             ic = constraint.IntConstraint(1,0)
             constraint.sample(ic)
             self.assertTrue('invalid constraint {}'.format(ic) in context.exception)
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(constraint.InvalidConstraintError) as context:
             ic = constraint.IntConstraint(1,0)
             lc = constraint.ListConstraint(1, 4, [ic] * 4)
             constraint.sample(lc)

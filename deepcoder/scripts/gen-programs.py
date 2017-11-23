@@ -35,7 +35,8 @@ def main():
     parser.add_argument('--nb_train', type=int)
     parser.add_argument('--nb_test', type=int)
     parser.add_argument('--prog_len', type=int)
-    parser.add_argument('--outfile', type=str)
+    parser.add_argument('--train_out', type=str)
+    parser.add_argument('--test_out', type=str)
     parser.add_argument('--enforce_disjoint', action='store_true')
     args = parser.parse_args()
 
@@ -81,8 +82,8 @@ def main():
         train_programs = programs[args.nb_train]
         test_programs = programs[args.nb_train:args.nb_train + args.nb_test]
 
-    train_outfile = args.outfile.replace('.txt', '') + '_train.txt'
-    test_outfile = args.outfile.replace('.txt', '') + '_test.txt'
+    train_outfile = args.train_out
+    test_outfile = args.test_out
 
     for programs, outfile in zip([train_programs, test_programs],
         [train_outfile, test_outfile]):

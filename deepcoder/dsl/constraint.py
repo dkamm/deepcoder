@@ -11,6 +11,9 @@ from deepcoder.dsl.value import Value
 
 L = 20 # max length of list
 
+class InvalidConstraintError(Exception):
+    pass
+
 class IntConstraint(object):
     """Int range constraint.
 
@@ -96,7 +99,7 @@ class ListConstraint(object):
 
 def sample(constraint):
     if not constraint.valid:
-        raise ValueError('invalid constraint {}'.format(constraint))
+        raise InvalidConstraintError('invalid constraint {}'.format(constraint))
 
     if isinstance(constraint, IntConstraint):
         if constraint.vmin == constraint.vmax:

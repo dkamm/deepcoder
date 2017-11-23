@@ -24,7 +24,7 @@ def main():
         for _ in range(2):
             try:
                 examples = constraint.get_input_output_examples(program, args.nb_examples)
-            except NullInputError:
+            except (NullInputError, constraint.InvalidConstraintError):
                 continue
         if not examples:
             continue
