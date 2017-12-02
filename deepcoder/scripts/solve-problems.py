@@ -9,6 +9,7 @@ import tqdm
 
 from deepcoder import context
 from deepcoder import search
+from deepcoder import util
 from deepcoder.nn import encoding
 from deepcoder.dsl import impl
 from deepcoder.dsl.program import Program
@@ -21,7 +22,7 @@ def load_problems(problemfile):
     return problems
 
 def solve_problem(problem, T, mode='dfs', predictor=None, gas=np.inf):
-    examples =  encoding.decode_examples(problem['examples'])
+    examples =  util.decode_examples(problem['examples'])
     if predictor is None:
         ctx = context.DefaultContext
     else:
