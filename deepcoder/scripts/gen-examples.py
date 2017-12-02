@@ -5,7 +5,7 @@ import tqdm
 from deepcoder.dsl import constraint
 from deepcoder.dsl.function import NullInputError
 from deepcoder.dsl.program import Program
-from deepcoder import converter
+from deepcoder import util
 
 def main():
     parser = argparse.ArgumentParser()
@@ -24,7 +24,8 @@ def main():
         for _ in range(2):
             try:
                 examples = constraint.get_input_output_examples(program, args.nb_examples)
-            except (NullInputError, constraint.InvalidConstraintError):
+            # TODO: figure out why OutputOutOfRange happened here in T=4 generation
+            except (NullInputError, constraint.InvalidConstraintError, constraint.OutputOutOfRangeError):
                 continue
         if not examples:
             continue
@@ -35,7 +36,7 @@ def main():
             raw_examples.append((raw_inputs, raw_output))
 
         data = dict(program=program.prefix, examples=raw_examples,
-            attribute=converter.get_attribute_vec(program))
+            attribute=util.get_attribute_vec(program))
         datas.append(data)
 
     with open(args.outfile, 'w') as out_fh:
