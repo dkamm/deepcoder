@@ -23,5 +23,6 @@ for PROG_LEN in ${PROG_LENS[*]}; do
             --gas $GAS
 
         gsutil cp $RESULT_FILE gs://deepcoder/results/$RESULT_FILE
+        rm -f $RESULT_FILE
     done
 done

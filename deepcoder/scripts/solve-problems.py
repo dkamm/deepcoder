@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import tqdm
 
-from deepcoder.attribute import get_scores, print_scores
 from deepcoder import context
 from deepcoder import search
 from deepcoder.nn import encoding
