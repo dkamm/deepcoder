@@ -2,4 +2,6 @@
 *.swo
 *.swn
 *.pyc
+.ipynb_checkpoints
+.vscode
 deepcoder.egg-info

@@ -1,4 +1,5 @@
 import argparse
+import collections
 import functools
 import concurrent.futures
 import time
@@ -10,26 +11,15 @@ import tqdm
 from deepcoder import context
 from deepcoder import search
 from deepcoder import util
-from deepcoder.nn import encoding
+from deepcoder.nn import model
 from deepcoder.dsl import impl
 from deepcoder.dsl.program import Program
 
-def load_problems(problemfile):
-    problems = []
-    with open(problemfile) as fh:
-        for line in fh:
-            problems.append(json.loads(line.rstrip()))
-    return problems
-
-def solve_problem(problem, T, mode='dfs', predictor=None, gas=np.inf):
-    examples =  util.decode_examples(problem['examples'])
-    if predictor is None:
-        ctx = context.DefaultContext
-    else:
-        predictor_input = encoding.get_row(examples, 3, 2)
-        predictions = predictor.predict(predictor_input)
-        scores = dict(zip(predictions, impl.FUNCTIONS))
-        ctx = context.Context(scores)
+def solve_problem(problem, T, mode='dfs', gas=np.inf):
+    examples = [util.decode_example(x) for x in problem['examples']]
+    predictions = problem.get('prediction', np.zeros(len(impl.FUNCTIONS)))
+    scores = dict(zip(impl.FUNCTIONS, predictions))
+    ctx = context.Context(scores)
     start = time.time()
     if mode == 'dfs':
         search_func = search.dfs
@@ -37,58 +27,64 @@ def solve_problem(problem, T, mode='dfs', predictor=None, gas=np.inf):
         search_func = search.sort_and_add
     else:
         raise ValueError('invalid search mode {}'.format(mode))
-    solution, steps_used = search_func(examples, T, ctx)
+    solution, steps_used = search_func(examples, T, ctx, gas)
     end = time.time()
     if solution:
         solution = solution.prefix
     return solution, end - start, steps_used
 
-def solve_problems(problems, T, mode='dfs', predictor=None, gas=np.inf):
+def solve_problems(problems, T, mode='dfs', gas=np.inf):
     rows = []
     pbar = tqdm.tqdm(total=len(problems))
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        futs = [executor.submit(solve_problem, problem, T, mode, predictor, gas) 
+        futs = [executor.submit(solve_problem, problem, T, mode, gas) 
                 for problem in problems]
         for fut, problem in zip(futs, problems):
             solution, walltime, steps_used = fut.result()
-            rows.append({
-                'solution': solution,
-                'wall_ms': walltime * 1000,
-                'nb_steps': steps_used,
-                'reference': problem['program'],
-            })
+            rows.append(collections.OrderedDict([
+                ('nb_steps', steps_used),
+                ('wall_ms', walltime * 1000),
+                ('solution', solution),
+                ('reference', problem['program']),
+            ]))
             pbar.update(1)
     pbar.close()
     return rows
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--problemfile', type=str)
-    parser.add_argument('--predictorfile', type=str)
+    parser.add_argument('problemfile', type=str)
+    parser.add_argument('--predictor', type=str)
     parser.add_argument('--outfile', type=str)
     parser.add_argument('--T', type=int)
     parser.add_argument('--mode', type=str, 
-        choices=['dfs', 'sort-and-add'])
+        choices=['dfs', 'sort-and-add'],
+        default='dfs')
     parser.add_argument('--gas', type=int, default=np.inf)
     args = parser.parse_args()
 
-    problems = load_problems(args.problemfile)
+    problems = json.loads(open(args.problemfile).read())
 
-    if args.predictorfile:
+    if args.predictor:
+        # annotate problems with predictions
         import keras
-        predictor = keras.models.load_model(args.predictorfile)
-    else:
-        predictor = None
+        predictor = keras.models.load_model(args.predictor)
+        max_nb_inputs = model.get_max_nb_inputs(predictor)
+        X, _ = model.get_XY(problems, max_nb_inputs)
+        predictions = predictor.predict(X)
+        for problem, pred in zip(problems, predictions):
+            problem['prediction'] = pred
 
-    rows = solve_problems(problems, args.T, args.mode, predictor)
+    rows = solve_problems(problems, args.T, args.mode, args.gas)
 
     df = pd.DataFrame(rows)
-    df.to_hdf(args.outfile, 'data')
-    
-    #nb_solved = len([x for x in rows if x['solution']])
-    #print('solved {}/{} ({:.2f}%)'.format(nb_solved, 
-    #    len(rows), nb_solved / len(rows) * 100)) 
-    #print(df[['wall (ms)', '# steps']].quantile([.2, .4, .6, .8, 1.]))
-
+    nb_solved = len(df) - sum(df.solution.isnull())
+    print('summary:')
+    print('solved {}/{} ({}%)'.format(nb_solved, len(df), nb_solved * 100. / len(df)))
+    print(df.describe())
+    if args.outfile:
+        print('saving results to', args.outfile)
+        df.to_hdf(args.outfile, 'data')
+   
 if __name__ == '__main__':
     main()

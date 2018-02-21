@@ -14,24 +14,24 @@ for idx in ${!PROG_LENS[*]} ; do
 
     echo "Generating programs T=${PROG_LEN} #train=${NB_TRAIN} #test=${NB_TEST}"
 
-    OUT_PREFIX="programs_T=${PROG_LEN}"
+    OUT_PREFIX="T=${PROG_LEN}"
 
     TRAIN_PROG="${OUT_PREFIX}_train_programs.txt"
     TEST_PROG="${OUT_PREFIX}_test_programs.txt"
 
-    TRAIN_OUT="${OUT_PREFIX}_train.jsonl"
-    TEST_OUT="${OUT_PREFIX}_test.jsonl"
+    TRAIN_OUT="${OUT_PREFIX}_train.json"
+    TEST_OUT="${OUT_PREFIX}_test.json"
 
     python deepcoder/scripts/gen-programs.py \
         --nb_inputs $NB_INPUTS --nb_train $NB_TRAIN --nb_test $NB_TEST \
         --prog_len $PROG_LEN --train_out $TRAIN_PROG --test_out $TEST_PROG \
         --enforce_disjoint
 
-    echo "Generating train examples #train=${NB_TRAIN}"
+    echo "Generating train problems #train=${NB_TRAIN}"
     python deepcoder/scripts/gen-examples.py --infile $TRAIN_PROG \
         --outfile $TRAIN_OUT
 
-    echo "Generating test examples #test=${NB_TEST}"
+    echo "Generating test problems #test=${NB_TEST}"
     python deepcoder/scripts/gen-examples.py --infile $TEST_PROG \
         --outfile $TEST_OUT
 

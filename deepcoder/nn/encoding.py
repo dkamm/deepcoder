@@ -4,7 +4,9 @@ from deepcoder.dsl import constants
 from deepcoder.dsl.types import INT, LIST
 from deepcoder.dsl.value import NULLVALUE
 
-def encode(value, L):
+L = 20  # length of input 
+
+def encode(value, L=L):
     if value.type == LIST:
         typ = [0, 1]
         vals = value.val + [constants.NULL] * (L - len(value.val))
@@ -35,7 +37,7 @@ def get_output_typename(example_idx):
 def get_output_valname(example_idx, val_idx):
     return get_output_prefix(example_idx) + 'val' + str(val_idx)
 
-def get_row(examples, nb_inputs, L):
+def get_row(examples, max_nb_inputs, L=L):
     row = {}
     for i, (inputs, output) in enumerate(examples):
         for j, input in enumerate(inputs):
@@ -44,7 +46,7 @@ def get_row(examples, nb_inputs, L):
             for k, val in enumerate(vals):
                 row[get_input_valname(i, j, k)] = val
 
-        for j in range(len(inputs), nb_inputs):
+        for j in range(len(inputs), max_nb_inputs):
             # pad with null
             typ, vals = encode(NULLVALUE, L)
             row[get_input_typename(i, j)] = typ

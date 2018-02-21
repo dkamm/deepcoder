@@ -1,20 +1,33 @@
 import collections
 import json
 import numpy as np
+import re
 
 from deepcoder.dsl import impl
 from deepcoder.dsl import constants
 from deepcoder.nn import encoding
 from deepcoder import util
-from keras.layers import Input, Dense, Embedding, Flatten
+from keras.layers import Input, Dense, Embedding, Flatten, InputLayer
 from keras.layers.merge import Average, Concatenate
 from keras.models import Model
 
 K = 256 # number of hidden units
 #M = 5   # number of input-output pairs per program
 #E = 2   # embedding dimension
-L = 20  # length of input (TODO: consolidate definitions of this)
-#I = 3   # number of inputs
+L = encoding.L  # padding length of input
+#I = 3   # max number of inputs
+
+# TODO: consider saving as metadata instead of inferring but keras doesn't support attaching metadata.
+def get_max_nb_inputs(model):
+    """Calculates and returns I (number of program inputs for model)."""
+    input_layers = [x for x in model.layers if isinstance(x, InputLayer)]
+    input_layer_names = [x.name for x in input_layers]
+    max_nb_inputs = 0
+    for input_layer_name in input_layer_names:
+        match = re.search('input(\d+)', input_layer_name)
+        if match:
+            max_nb_inputs = max(max_nb_inputs, int(match.groups()[0]))
+    return max_nb_inputs + 1
 
 def get_model(I, E, M=5):
     """Returns a compiled model described in Appendix section C.
@@ -80,14 +93,13 @@ def get_model(I, E, M=5):
     model.compile('adam', 'categorical_crossentropy')
     return model
 
-def load_data(fileobj, nb_inputs):
+def get_XY(problems, max_nb_inputs):
     y = []
     rows = []
-    for line in fileobj:
-        data = json.loads(line.rstrip())
-        examples = util.decode_examples(data['examples'])
-        row = encoding.get_row(examples, nb_inputs, L)
-        y.append(data['attribute'])
+    for problem in problems:
+        examples = [util.decode_example(x) for x in problem['examples']]
+        row = encoding.get_row(examples, max_nb_inputs, L)
+        y.append(problem['attribute'])
         rows.append(row)
 
     # convert
@@ -106,4 +118,4 @@ def load_data(fileobj, nb_inputs):
             # by INTMAX.  This is less than NULL which is 513
             v[v < constants.NULL] += constants.INTMAX
 
-    return X, y
+    return X, np.array(y)

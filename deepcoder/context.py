@@ -4,7 +4,13 @@ import numpy as np
 from deepcoder.dsl.impl import FUNCTIONS, LAMBDAS
 
 class Context(object):
+    """Search context for ranking functions/lambdas to be explored."""
+
     def __init__(self, scores_map):
+        """
+        Arguments:
+            scores_map (dict): dict of function to score
+        """
         self.items = sorted(scores_map.items(), key=lambda x: -x[1]) # descending
         self.scores_map = scores_map
 
