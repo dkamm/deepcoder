@@ -3,9 +3,9 @@ Pure python 3 implementation of DeepCoder (https://arxiv.org/pdf/1611.01989.pdf)
 
 # Usage
 ## quickstart
-1. Install requirements
+1. Install packages via poetry
 ```
-pip install -r requirements.txt
+poetry install
 ```
 
 2. Download dataset
@@ -16,7 +16,7 @@ tar xvf dataset.tar.gz # extracts to folder dataset
 
 3. Run solver
 ```
-python -m deepcoder.scripts.solve-problems dataset/T=2_test.json --T 2 --mode dfs --gas 1000
+poetry run python scripts/solve-problems.py dataset/T=2_test.json --T 2 --mode dfs --gas 1000
 
 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 100/100 [00:00<00:00, 147.26it/s]
 summary:
@@ -35,12 +35,12 @@ max    1002.000000  102.509022
 
 4. Train neural net
 ```
-python -m deepcoder.scripts.train-nn --in dataset/T=2_train.json --out model.h5 --epochs 10
+poetry run python scripts/train-nn.py --in dataset/T=2_train.json --out model.h5 --epochs 10
 ```
 
 5. Run solver with neural net
 ```
-python -m deepcoder.scripts.solve-problems dataset/T=2_test.json --T 2 --mode dfs --gas 1000 --predictor model.h5
+poetry run python scripts/solve-problems.py dataset/T=2_test.json --T 2 --mode dfs --gas 1000 --predictor model.h5
 
 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 100/100 [00:00<00:00, 175.35it/s]
 summary:

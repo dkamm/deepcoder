@@ -17,7 +17,7 @@ for PROG_LEN in ${PROG_LENS[*]}; do
 
         gsutil cp gs://deepcoder/datasets/$PROBLEM_FILE $PROBLEM_FILE
 
-        python deepcoder/scripts/solve-problems.py \
+        poetry run python scripts/solve-problems.py \
             --problemfile $PROBLEM_FILE \
             --outfile $RESULT_FILE \
             --T $PROG_LEN \

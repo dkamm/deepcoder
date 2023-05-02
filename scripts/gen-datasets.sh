@@ -22,17 +22,17 @@ for idx in ${!PROG_LENS[*]} ; do
     TRAIN_OUT="${OUT_PREFIX}_train.json"
     TEST_OUT="${OUT_PREFIX}_test.json"
 
-    python -m deepcoder.scripts.gen-programs \
+    poetry run python scripts/gen-programs.py \
         --nb_inputs $NB_INPUTS --nb_train $NB_TRAIN --nb_test $NB_TEST \
         --prog_len $PROG_LEN --train_out $TRAIN_PROG --test_out $TEST_PROG \
         --enforce_disjoint
 
     echo "Generating train problems #train=${NB_TRAIN}"
-    python -m deepcoder.scripts.gen-problems --infile $TRAIN_PROG \
+    poetry run python scripts/gen-problems.py --infile $TRAIN_PROG \
         --outfile $TRAIN_OUT
 
     echo "Generating test problems #test=${NB_TEST}"
-    python -m deepcoder.scripts.gen-problems --infile $TEST_PROG \
+    poetry run python scripts/gen-problems.py --infile $TEST_PROG \
         --outfile $TEST_OUT
 
     rm -f $TRAIN_PROG
