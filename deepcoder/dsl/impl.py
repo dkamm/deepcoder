@@ -4,44 +4,75 @@ from deepcoder.dsl.function import Function
 from deepcoder.dsl.types import INT, BOOL, LIST, FunctionType
 
 # firstorder functions
-HEAD = Function('HEAD', lambda xs: xs[0] if xs else None, LIST, INT)
-TAIL = Function('TAIL', lambda xs: xs[-1] if xs else None, LIST, INT)
-MINIMUM = Function('MINIMUM', lambda xs: min(xs) if xs else None, LIST, INT)
-MAXIMUM = Function('MAXIMUM', lambda xs: max(xs) if xs else None, LIST, INT)
-REVERSE = Function('REVERSE', lambda xs: xs[::-1], LIST, LIST)
+def _head(xs): return xs[0] if xs else None
+HEAD = Function('HEAD', _head, LIST, INT)
+def _tail(xs): return xs[-1] if xs else None
+TAIL = Function('TAIL', _tail, LIST, INT)
+def _minimum(xs): return min(xs) if xs else None
+MINIMUM = Function('MINIMUM', _minimum, LIST, INT)
+def _maximum(xs): return max(xs) if xs else None
+MAXIMUM = Function('MAXIMUM', _maximum, LIST, INT)
+def _reverse(xs): return xs[::-1]
+REVERSE = Function('REVERSE', _reverse, LIST, LIST)
 SORT = Function('SORT', sorted, LIST, LIST)
 SUM = Function('SUM', sum, LIST, INT)
 
-TAKE = Function('TAKE', lambda n, xs: xs[:n], (INT, LIST), LIST)
-DROP = Function('DROP', lambda n, xs: xs[n:], (INT, LIST), LIST)
-ACCESS = Function('ACCESS', lambda n, xs: xs[n] if n >= 0 and len(xs) > n else None, (INT, LIST), INT)
+def _take(n, xs): return xs[:n]
+TAKE = Function('TAKE', _take, (INT, LIST), LIST)
+def _drop(n, xs): return xs[n:]
+DROP = Function('DROP', _drop, (INT, LIST), LIST)
+def _access(n, xs): return xs[n] if n >= 0 and len(xs) > n else None
+ACCESS = Function('ACCESS', _access, (INT, LIST), INT)
 
 
 # lambda functions
-PLUS1 = Function('+1', lambda x: x + 1, INT, INT)
-MINUS1 = Function('-1', lambda x: x - 1, INT, INT)
-TIMES2 = Function('*2', lambda x: x * 2, INT, INT)
-DIV2 = Function('/2', lambda x: int(x / 2), INT, INT)
-TIMESNEG1 = Function('*-1', lambda x: -x, INT, INT)
-POW2 = Function('**2', lambda x: x ** 2, INT, INT)
-TIMES3 = Function('*3', lambda x: x * 3, INT, INT)
-DIV3 = Function('/3', lambda x: int(x / 3), INT, INT)
-TIMES4 = Function('*4', lambda x: x * 4, INT, INT)
-DIV4 = Function('/4', lambda x: int(x / 4), INT, INT)
+def _plus1(x): return x + 1
+PLUS1 = Function('+1', _plus1, INT, INT)
+def _minus1(x): return x - 1
+MINUS1 = Function('-1', _minus1, INT, INT)
+def _times2(x): return x * 2
+TIMES2 = Function('*2', _times2, INT, INT)
+def _div2(x): return int(x / 2)
+DIV2 = Function('/2', _div2, INT, INT)
+def _timesneg1(x): return -x
+TIMESNEG1 = Function('*-1', _timesneg1, INT, INT)
+def _pow2(x): return x ** 2
+POW2 = Function('**2', _pow2, INT, INT)
+def _times3(x): return x * 3
+TIMES3 = Function('*3', _times3, INT, INT)
+def _div3(x): return int(x / 3)
+DIV3 = Function('/3', _div3, INT, INT)
+def _times4(x): return x * 4
+TIMES4 = Function('*4', _times4, INT, INT)
+def _div4(x): return int(x / 4)
+DIV4 = Function('/4', _div4, INT, INT)
 
-GT0 = Function('>0', lambda x: x > 0, INT, BOOL)
-LT0 = Function('<0', lambda x: x < 0, INT, BOOL)
-EVEN = Function('EVEN', lambda x: x % 2 == 0, INT, BOOL)
-ODD = Function('ODD', lambda x: x % 2 == 1, INT, BOOL)
+def _gt0(x): return x > 0
+GT0 = Function('>0', _gt0, INT, BOOL)
+def _lt0(x): return x < 0
+LT0 = Function('<0', _lt0, INT, BOOL)
+def _even(x): return x % 2 == 0
+EVEN = Function('EVEN', _even, INT, BOOL)
+def _odd(x): return x % 2 == 1
+ODD = Function('ODD', _odd, INT, BOOL)
 
-LPLUS = Function('+', lambda x, y: x + y, (INT, INT), INT)
-LMINUS = Function('-', lambda x, y: x - y, (INT, INT), INT)
-LTIMES = Function('*', lambda x, y: x * y, (INT, INT), INT)
+def _lplus(x, y): return x + y
+LPLUS = Function('+', _lplus, (INT, INT), INT)
+def _lminus(x, y): return x - y
+LMINUS = Function('-', _lminus, (INT, INT), INT)
+def _ltimes(x, y): return x * y
+LTIMES = Function('*', _ltimes, (INT, INT), INT)
 #LDIV = Function('/', lambda x, y: x / y if y else None, (INT, INT), INT)
 LMIN = Function('min', min, (INT, INT), INT)
 LMAX = Function('max', max, (INT, INT), INT)
 
 # higher order functions
+def _map(f, xs): return tuple(f(x) for x in xs)
+MAP = Function('MAP', _map, (FunctionType(INT, INT), LIST), LIST)
+def _filter(f, xs): return tuple(x for x in xs if f(x))
+FILTER = Function('FILTER', _filter, (FunctionType(INT, BOOL), LIST), LIST)
+def _count(f, xs): return len(_filter(f, xs))
+COUNT = Function('COUNT', _count, (FunctionType(INT, BOOL), LIST), INT)
 def _scan1l(f, xs):
     ys = [0] * len(xs)
     for i, x in enumerate(xs):
@@ -49,13 +80,10 @@ def _scan1l(f, xs):
             ys[i] = f(ys[i - 1], x)
         else:
             ys[i] = x
-    return ys
-
-MAP = Function('MAP', lambda f, xs: [f(x) for x in xs], (FunctionType(INT, INT), LIST), LIST)
-FILTER = Function('FILTER', lambda f, xs: [x for x in xs if f(x)], (FunctionType(INT, BOOL), LIST), LIST)
-COUNT = Function('COUNT', lambda f, xs: len([x for x in xs if f(x)]), (FunctionType(INT, BOOL), LIST), INT)
+    return tuple(ys)
 SCAN1L = Function('SCAN1L', _scan1l, (FunctionType((INT, INT), INT), LIST), LIST)
-ZIPWITH = Function('ZIPWITH', lambda f, xs, ys: [f(x, y) for x, y in zip(xs, ys)], (FunctionType((INT, INT), INT), LIST, LIST), LIST)
+def _zipwith(f, xs, ys): return tuple(f(x, y) for x, y in zip(xs, ys))
+ZIPWITH = Function('ZIPWITH', _zipwith, (FunctionType((INT, INT), INT), LIST, LIST), LIST)
 
 LAMBDAS = [
     PLUS1,
