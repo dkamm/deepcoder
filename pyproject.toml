@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "deepcoder"
+version = "0.1.0"
+description = "Pure python implementation of Deepcoder paper"
+authors = ["dkamm <david@kamm.dev>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<4.0"
+keras = "^2.12.0"
+numpy = "^1.24.3"
+pandas = "^2.0.1"
+tqdm = "^4.65.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

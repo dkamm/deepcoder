@@ -1,6 +1,0 @@
-keras
-numpy
-pandas
-tables
-tensorflow
-tqdm
